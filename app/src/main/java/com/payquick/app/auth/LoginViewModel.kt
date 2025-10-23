@@ -1,5 +1,6 @@
 package com.payquick.app.auth
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.payquick.domain.repository.AuthRepository
@@ -27,7 +28,7 @@ class LoginViewModel @Inject constructor(
     val events: SharedFlow<LoginEvent> = _events.asSharedFlow()
 
     fun onEmailChanged(value: String) {
-        _state.update { it.copy(email = value, errorMessage = null) }
+        _state.update { it.copy(email = value, errorMessage = null, emailError = null) }
     }
 
     fun onPasswordChanged(value: String) {
@@ -44,14 +45,44 @@ class LoginViewModel @Inject constructor(
 
     private fun login() {
         val current = _state.value
-        if (!current.isFormValid || current.isLoading) {
-            _state.update { it.copy(errorMessage = it.errorMessage ?: "Enter your credentials") }
-            return
+        if (current.isLoading) return
+
+        val trimmedEmail = current.email.trim()
+        when {
+            trimmedEmail.isEmpty() -> {
+                _state.update {
+                    it.copy(
+                        emailError = "Email is required",
+                        errorMessage = "Enter your credentials"
+                    )
+                }
+                return
+            }
+            current.password.isBlank() -> {
+                _state.update { it.copy(errorMessage = "Enter your credentials") }
+                return
+            }
+            !Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches() -> {
+                _state.update {
+                    it.copy(
+                        emailError = "Enter a valid email address",
+                        errorMessage = "Enter a valid email address"
+                    )
+                }
+                return
+            }
         }
 
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, errorMessage = null) }
-            val result = authRepository.login(current.email.trim(), current.password)
+            _state.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    emailError = null,
+                    email = trimmedEmail
+                )
+            }
+            val result = authRepository.login(trimmedEmail, current.password)
             result.onSuccess {
                 val enrolled = authRepository.isMfaEnrolled.first()
                 _state.update { it.copy(isLoading = false) }

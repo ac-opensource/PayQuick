@@ -173,6 +173,16 @@ private fun LoginContent(
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text("Enter your email") },
                         leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
+                        isError = state.emailError != null,
+                        supportingText = {
+                            state.emailError?.let { message ->
+                                Text(
+                                    text = message,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        },
                         singleLine = true,
                         shape = RoundedCornerShape(24.dp),
                         keyboardOptions = KeyboardOptions(
@@ -229,7 +239,7 @@ private fun LoginContent(
                         onClick = onSubmit,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
-                        enabled = state.isFormValid && !state.isLoading,
+                        enabled = state.isFormValid && state.emailError == null && !state.isLoading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF0D1E37)
                         )
