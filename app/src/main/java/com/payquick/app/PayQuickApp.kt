@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,6 +58,7 @@ fun PayQuickApp() {
         val navController = rememberNavController()
         val snackbarHostState = remember { SnackbarHostState() }
         val hasCompletedSplash = rememberSaveable { mutableStateOf(false) }
+        val context = LocalContext.current
 
         LaunchedEffect(sessionState.session, hasCompletedSplash.value) {
             if (sessionState.isLoading) return@LaunchedEffect
@@ -87,7 +89,12 @@ fun PayQuickApp() {
         LaunchedEffect(Unit) {
             sessionViewModel.events.collect { event ->
                 when (event) {
-                    is SessionEvent.Error -> snackbarHostState.showSnackbar(event.message)
+                    is SessionEvent.Error -> {
+                        val message = event.message ?: event.messageResId?.let(context::getString)
+                        if (!message.isNullOrBlank()) {
+                            snackbarHostState.showSnackbar(message)
+                        }
+                    }
                 }
             }
         }

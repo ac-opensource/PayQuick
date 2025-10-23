@@ -47,7 +47,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,6 +57,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.annotation.DrawableRes
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.payquick.R
@@ -68,13 +71,19 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 LoginEvent.NavigateToMfaEnroll -> onNavigateToMfaEnroll()
                 LoginEvent.NavigateToMfaVerify -> onNavigateToMfaVerify()
-                is LoginEvent.ShowMessage -> onShowSnackbar(event.message)
+                is LoginEvent.ShowMessage -> {
+                    val message = event.message ?: event.messageResId?.let(context::getString)
+                    if (!message.isNullOrBlank()) {
+                        onShowSnackbar(message)
+                    }
+                }
             }
         }
     }
@@ -139,13 +148,13 @@ private fun LoginContent(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Login to Access Your",
+                        text = stringResource(R.string.login_title_prefix),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "PayQuick",
+                        text = stringResource(R.string.login_title_highlight),
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp
@@ -155,7 +164,8 @@ private fun LoginContent(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    state.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                    val formMessage = state.formMessageResId?.let { stringResource(id = it) }
+                    (formMessage ?: state.errorMessage)?.takeIf { it.isNotBlank() }?.let { message ->
                         Text(
                             text = message,
                             color = MaterialTheme.colorScheme.error,
@@ -171,13 +181,13 @@ private fun LoginContent(
                         value = state.email,
                         onValueChange = onEmailChanged,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Enter your email") },
+                        label = { Text(stringResource(R.string.login_email_placeholder)) },
                         leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
-                        isError = state.emailError != null,
+                        isError = state.emailErrorResId != null,
                         supportingText = {
-                            state.emailError?.let { message ->
+                            state.emailErrorResId?.let { resId ->
                                 Text(
-                                    text = message,
+                                    text = stringResource(id = resId),
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall
                                 )
@@ -195,7 +205,7 @@ private fun LoginContent(
                         value = state.password,
                         onValueChange = onPasswordChanged,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Enter your password") },
+                        label = { Text(stringResource(R.string.login_password_placeholder)) },
                         leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(
@@ -226,12 +236,12 @@ private fun LoginContent(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Remember me",
+                                text = stringResource(R.string.login_remember_me),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
-                        TextButton(onClick = { /* Placeholder */ }) {
-                            Text("Forgot password?")
+                        TextButton(onClick = { }) {
+                            Text(stringResource(R.string.login_forgot_password))
                         }
                     }
 
@@ -239,7 +249,7 @@ private fun LoginContent(
                         onClick = onSubmit,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
-                        enabled = state.isFormValid && state.emailError == null && !state.isLoading,
+                        enabled = state.isFormValid && state.emailErrorResId == null && !state.isLoading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF0D1E37)
                         )
@@ -251,13 +261,13 @@ private fun LoginContent(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text("Login")
+                            Text(stringResource(R.string.login_action))
                         }
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Or login with",
+                        text = stringResource(R.string.login_social_title),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -268,14 +278,14 @@ private fun LoginContent(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         SocialLoginButton(
-                            label = "Google",
-                            iconRes = null,
-                            onClick = { /* Placeholder */ }
+                            label = stringResource(R.string.login_social_google),
+                            iconRes = R.drawable.android_24px,
+                            onClick = { }
                         )
                         SocialLoginButton(
-                            label = "Facebook",
-                            iconRes = null,
-                            onClick = { /* Placeholder */ }
+                            label = stringResource(R.string.login_social_facebook),
+                            iconRes = R.drawable.android_24px,
+                            onClick = { }
                         )
                     }
 
@@ -284,9 +294,12 @@ private fun LoginContent(
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Don't have an account?", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        TextButton(onClick = { /* Placeholder */ }) {
-                            Text("Create an account")
+                        Text(
+                            text = stringResource(R.string.login_no_account_prompt),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        TextButton(onClick = { }) {
+                            Text(stringResource(R.string.login_sign_up))
                         }
                     }
                 }
@@ -298,7 +311,7 @@ private fun LoginContent(
 @Composable
 private fun RowScope.SocialLoginButton(
     label: String,
-    iconRes: Int?,
+    @DrawableRes iconRes: Int,
     onClick: () -> Unit
 ) {
     OutlinedButton(
@@ -307,7 +320,7 @@ private fun RowScope.SocialLoginButton(
         shape = RoundedCornerShape(24.dp)
     ) {
         Icon(
-            painter = painterResource(id = R.drawable.android_24px),
+            painter = painterResource(id = iconRes),
             contentDescription = null,
             modifier = Modifier.size(20.dp)
         )

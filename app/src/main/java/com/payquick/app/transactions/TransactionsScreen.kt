@@ -40,8 +40,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.payquick.R
 import com.payquick.app.common.EmptyStateCard
 import com.payquick.app.common.SquigglyLoadingIndicator
 import com.payquick.app.common.TopBar
@@ -63,6 +66,7 @@ fun TransactionsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val backAction = rememberBackNavigationAction(onNavigateBack)
+    val context = LocalContext.current
 
     BackHandler(enabled = backAction.isEnabled) {
         backAction.onBack()
@@ -71,7 +75,12 @@ fun TransactionsScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is TransactionsEvent.ShowMessage -> onShowSnackbar(event.message)
+                is TransactionsEvent.ShowMessage -> {
+                    val message = event.message ?: event.messageResId?.let(context::getString)
+                    if (!message.isNullOrBlank()) {
+                        onShowSnackbar(message)
+                    }
+                }
                 TransactionsEvent.LoggedOut -> backAction.onBack()
             }
         }
@@ -125,7 +134,7 @@ private fun TransactionsContent(
     Column(modifier = modifier.fillMaxSize()) {
         TopBar(
             modifier = Modifier.padding(horizontal = 16.dp),
-            title = "Transactions",
+            title = stringResource(R.string.transactions_title),
             leftIcon = Icons.AutoMirrored.Rounded.ArrowBack,
             onLeftIconClick = onNavigateBack,
             leftIconEnabled = isBackEnabled
@@ -137,6 +146,8 @@ private fun TransactionsContent(
             onRefresh = onRefresh,
             modifier = Modifier.fillMaxSize()
         ) {
+            val listError = state.errorMessageResId?.let { stringResource(it) } ?: state.errorMessage
+
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
@@ -158,21 +169,21 @@ private fun TransactionsContent(
 
                 if (state.isLoading && state.groups.isEmpty()) {
                     transactionListSkeleton()
-                } else if (state.errorMessage != null && state.groups.isEmpty()) {
+                } else if (listError != null && state.groups.isEmpty()) {
                     item {
                         RetryErrorCard(
-                            message = state.errorMessage,
+                            message = listError,
                             onRetry = onRetry
                         )
                     }
                 } else if (state.groups.isEmpty()) {
                     item {
                         EmptyStateCard(
-                            title = "No activity",
+                            title = stringResource(R.string.transactions_empty_title),
                             body = if (state.searchQuery.isBlank()) {
-                                "As you send or receive money, your transactions will show up here."
+                                stringResource(R.string.transactions_empty_body)
                             } else {
-                                "No results for \"${state.searchQuery}\". Try a different search."
+                                stringResource(R.string.transactions_empty_search, state.searchQuery)
                             }
                         )
                     }
@@ -219,7 +230,7 @@ private fun TransactionsContent(
                 if (state.endReached) {
                     item {
                         Text(
-                            text = "You've reached the end of your transactions.",
+                            text = stringResource(R.string.transactions_end_of_list),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 24.dp),
@@ -230,7 +241,7 @@ private fun TransactionsContent(
                     }
                 }
 
-                state.errorMessage?.takeIf { state.groups.isNotEmpty() }?.let { message ->
+                listError?.takeIf { state.groups.isNotEmpty() }?.let { message ->
                     item { TransactionsInlineError(message = message, onRetry = onRetry) }
                 }
             }
@@ -247,12 +258,15 @@ private fun TransactionSearchBar(
         value = query,
         onValueChange = onQueryChange,
         modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text("Search transactions") },
+        placeholder = { Text(stringResource(R.string.transactions_search_placeholder)) },
         leadingIcon = { Icon(imageVector = Icons.Rounded.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotBlank()) {
                 IconButton(onClick = { onQueryChange("") }) {
-                    Icon(imageVector = Icons.Rounded.Close, contentDescription = "Clear search")
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.transactions_clear_search_cd)
+                    )
                 }
             }
         },
@@ -277,7 +291,14 @@ private fun TransactionFilterRow(
             FilterChip(
                 selected = selected == filter,
                 onClick = { onFilterChange(filter) },
-                label = { Text(filter.name) }
+                label = {
+                    val label = when (filter) {
+                        TransactionListFilter.ALL -> stringResource(R.string.transactions_filter_all)
+                        TransactionListFilter.SENT -> stringResource(R.string.transactions_filter_sent)
+                        TransactionListFilter.RECEIVED -> stringResource(R.string.transactions_filter_received)
+                    }
+                    Text(label)
+                }
             )
         }
     }
@@ -307,7 +328,7 @@ private fun TransactionsInlineError(message: String, onRetry: () -> Unit) {
             color = MaterialTheme.colorScheme.error
         )
         TextButton(onClick = onRetry) {
-            Text("Retry")
+            Text(stringResource(R.string.transactions_retry))
         }
     }
 }

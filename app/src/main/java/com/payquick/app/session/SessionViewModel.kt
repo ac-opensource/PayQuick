@@ -1,7 +1,9 @@
 package com.payquick.app.session
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.payquick.R
 import com.payquick.domain.model.Session
 import com.payquick.domain.usecase.ObserveSessionUseCase
 import com.payquick.domain.usecase.LogoutUseCase
@@ -25,7 +27,10 @@ data class SessionUiState(
 )
 
 sealed class SessionEvent {
-    data class Error(val message: String) : SessionEvent()
+    data class Error(
+        val message: String? = null,
+        @StringRes val messageResId: Int? = null
+    ) : SessionEvent()
 }
 
 @HiltViewModel
@@ -61,7 +66,13 @@ class SessionViewModel @Inject constructor(
             runCatching { logoutUseCase() }
                 .onFailure { error ->
                     _state.update { it.copy(isLoggingOut = false) }
-                    _events.emit(SessionEvent.Error(error.message ?: "Unable to log out"))
+                    val fallbackRes = R.string.session_error_logout
+                    val event = if (error.message.isNullOrBlank()) {
+                        SessionEvent.Error(messageResId = fallbackRes)
+                    } else {
+                        SessionEvent.Error(message = error.message)
+                    }
+                    _events.emit(event)
                 }
         }
     }

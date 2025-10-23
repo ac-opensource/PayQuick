@@ -2,16 +2,19 @@ package com.payquick.app.home
 
 import java.time.LocalDateTime
 
+import androidx.annotation.StringRes
+
 data class HomeUiState(
     val isLoading: Boolean = true,
     val isFetchingMore: Boolean = false,
     val endReached: Boolean = false,
     val headline: String = "",
     val subHeadline: String = "",
-    val balance: String = "$0.00",
+    val balance: String = "",
     val lastRefreshedLabel: String? = null,
     val transactionGroups: List<HomeTransactionGroup> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    @StringRes val errorMessageResId: Int? = null
 )
 
 data class HomeTransactionGroup(

@@ -1,12 +1,15 @@
 package com.payquick.app.home
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.payquick.R
 import com.payquick.domain.model.Transaction
 import com.payquick.domain.model.TransactionType
 import com.payquick.domain.usecase.FetchTransactionsPageUseCase
 import com.payquick.domain.usecase.ObserveSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.time.Month
@@ -34,7 +37,8 @@ import kotlinx.datetime.toLocalDateTime
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     observeSessionUseCase: ObserveSessionUseCase,
-    private val fetchTransactionsPageUseCase: FetchTransactionsPageUseCase
+    private val fetchTransactionsPageUseCase: FetchTransactionsPageUseCase,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeUiState())
@@ -54,8 +58,9 @@ class HomeViewModel @Inject constructor(
             .onEach { session ->
                 _state.update { current ->
                     val firstName = session?.user?.fullName?.substringBefore(" ")?.ifBlank { null }
-                    val headline = firstName?.let { "Hi, $it" } ?: "Welcome"
-                    val subHeadline = session?.user?.email ?: "Let's get you moving money"
+                    val headline = firstName?.let { context.getString(R.string.home_headline_named, it) }
+                        ?: context.getString(R.string.home_headline_default)
+                    val subHeadline = session?.user?.email ?: context.getString(R.string.home_subheadline_default)
                     current.copy(
                         headline = headline,
                         subHeadline = subHeadline
@@ -88,13 +93,26 @@ class HomeViewModel @Inject constructor(
                         balance = balanceLabel,
                         transactionGroups = transactionUi.toUiGroups(),
                         errorMessage = null,
-                        lastRefreshedLabel = "Updated $refreshedLabel"
+                        errorMessageResId = null,
+                        lastRefreshedLabel = context.getString(R.string.home_last_refreshed, refreshedLabel)
                     )
                 }
             }.onFailure { throwable ->
-                val message = throwable.message ?: "Unable to load activity"
-                _state.update { it.copy(isLoading = false, errorMessage = message) }
-                _events.emit(HomeEvent.ShowMessage(message))
+                val fallbackRes = R.string.home_error_activity
+                val message = throwable.message
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = message,
+                        errorMessageResId = message?.let { null } ?: fallbackRes
+                    )
+                }
+                val event = if (message.isNullOrBlank()) {
+                    HomeEvent.ShowMessage(messageResId = fallbackRes)
+                } else {
+                    HomeEvent.ShowMessage(message = message)
+                }
+                _events.emit(event)
             }
         }
     }
@@ -112,17 +130,31 @@ class HomeViewModel @Inject constructor(
                 } else {
                     val newTransactions = page.transactions.map { it.toUiModel() }
                     _state.update {
-                    val allTransactions = it.transactionGroups.flatMap { it.items } + newTransactions
+                        val allTransactions = it.transactionGroups.flatMap { it.items } + newTransactions
                         it.copy(
                             transactionGroups = allTransactions.toUiGroups(),
-                            isFetchingMore = false
+                            isFetchingMore = false,
+                            errorMessage = null,
+                            errorMessageResId = null
                         )
                     }
                 }
             }.onFailure { throwable ->
-                val message = throwable.message ?: "Unable to load more activity"
-                _state.update { it.copy(isFetchingMore = false, errorMessage = message) }
-                _events.emit(HomeEvent.ShowMessage(message))
+                val fallbackRes = R.string.home_error_activity_more
+                val message = throwable.message
+                _state.update {
+                    it.copy(
+                        isFetchingMore = false,
+                        errorMessage = message,
+                        errorMessageResId = message?.let { null } ?: fallbackRes
+                    )
+                }
+                val event = if (message.isNullOrBlank()) {
+                    HomeEvent.ShowMessage(messageResId = fallbackRes)
+                } else {
+                    HomeEvent.ShowMessage(message = message)
+                }
+                _events.emit(event)
             }
         }
     }
@@ -136,7 +168,7 @@ class HomeViewModel @Inject constructor(
             .sortedByDescending { it.key }
             .map { (monthYear, transactions) ->
                 HomeTransactionGroup(
-                    monthLabel = monthYear.label(),
+                    monthLabel = monthYear.label(context),
                     items = transactions.sortedByDescending { it.dateTime }
                 )
             }
@@ -177,9 +209,9 @@ class HomeViewModel @Inject constructor(
             return compareValuesBy(this, other, MonthYear::year, MonthYear::month)
         }
 
-        fun label(): String {
+        fun label(context: Context): String {
             val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.getDefault())
-            return "$monthName $year"
+            return context.getString(R.string.transactions_month_label, monthName, year)
         }
     }
 

@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.payquick.R
 
 @Composable
 fun TopBar(
@@ -33,7 +35,7 @@ fun TopBar(
     ) {
         if (leftIcon != null && onLeftIconClick != null) {
             Icon(
-                leftIcon, contentDescription = "Back",
+                leftIcon, contentDescription = stringResource(R.string.top_bar_back),
                 Modifier
                     .clickable(
                         enabled = leftIconEnabled,

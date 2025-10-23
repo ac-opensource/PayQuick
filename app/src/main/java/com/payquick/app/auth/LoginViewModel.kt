@@ -3,6 +3,7 @@ package com.payquick.app.auth
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.payquick.R
 import com.payquick.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -28,7 +29,7 @@ class LoginViewModel @Inject constructor(
     val events: SharedFlow<LoginEvent> = _events.asSharedFlow()
 
     fun onEmailChanged(value: String) {
-        _state.update { it.copy(email = value, errorMessage = null, emailError = null) }
+        _state.update { it.copy(email = value, errorMessage = null, emailErrorResId = null, formMessageResId = null) }
     }
 
     fun onPasswordChanged(value: String) {
@@ -52,21 +53,28 @@ class LoginViewModel @Inject constructor(
             trimmedEmail.isEmpty() -> {
                 _state.update {
                     it.copy(
-                        emailError = "Email is required",
-                        errorMessage = "Enter your credentials"
+                        emailErrorResId = R.string.login_error_email_required,
+                        formMessageResId = R.string.login_error_credentials,
+                        errorMessage = null
                     )
                 }
                 return
             }
             current.password.isBlank() -> {
-                _state.update { it.copy(errorMessage = "Enter your credentials") }
+                _state.update {
+                    it.copy(
+                        formMessageResId = R.string.login_error_credentials,
+                        errorMessage = null
+                    )
+                }
                 return
             }
             !Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches() -> {
                 _state.update {
                     it.copy(
-                        emailError = "Enter a valid email address",
-                        errorMessage = "Enter a valid email address"
+                        emailErrorResId = R.string.login_error_invalid_email,
+                        formMessageResId = R.string.login_error_invalid_email,
+                        errorMessage = null
                     )
                 }
                 return
@@ -78,7 +86,8 @@ class LoginViewModel @Inject constructor(
                 it.copy(
                     isLoading = true,
                     errorMessage = null,
-                    emailError = null,
+                    emailErrorResId = null,
+                    formMessageResId = null,
                     email = trimmedEmail
                 )
             }
@@ -89,9 +98,21 @@ class LoginViewModel @Inject constructor(
                 val event = if (enrolled) LoginEvent.NavigateToMfaVerify else LoginEvent.NavigateToMfaEnroll
                 _events.emit(event)
             }.onFailure { error ->
-                val message = error.message ?: "Unable to sign in"
-                _state.update { it.copy(isLoading = false, errorMessage = message) }
-                _events.emit(LoginEvent.ShowMessage(message))
+                val message = error.message
+                val fallbackRes = R.string.login_error_generic
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = message,
+                        formMessageResId = message?.let { null } ?: fallbackRes
+                    )
+                }
+                val event = if (message.isNullOrBlank()) {
+                    LoginEvent.ShowMessage(messageResId = fallbackRes)
+                } else {
+                    LoginEvent.ShowMessage(message = message)
+                }
+                _events.emit(event)
             }
         }
     }

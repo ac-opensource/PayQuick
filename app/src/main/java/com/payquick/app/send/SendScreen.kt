@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,6 +51,7 @@ import com.payquick.app.common.SwipeToSend
 import com.payquick.app.common.rememberBackNavigationAction
 import com.payquick.app.common.TopBar
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun SendScreen(
@@ -60,6 +62,7 @@ fun SendScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val backAction = rememberBackNavigationAction(onNavigateHome)
+    val context = LocalContext.current
 
     BackHandler(enabled = backAction.isEnabled) {
         backAction.onBack()
@@ -68,9 +71,14 @@ fun SendScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is SendEvent.ShowMessage -> onShowSnackbar(event.message)
+                is SendEvent.ShowMessage -> {
+                    val message = event.message ?: event.messageResId?.let(context::getString)
+                    if (!message.isNullOrBlank()) {
+                        onShowSnackbar(message)
+                    }
+                }
                 SendEvent.TransferCompleted -> {
-                    onShowSnackbar("Transfer scheduled")
+                    onShowSnackbar(context.getString(R.string.send_transfer_scheduled))
                     backAction.onBack()
                 }
             }
@@ -109,7 +117,7 @@ private fun SendContent(
             .padding(PaddingValues(horizontal = 20.dp)),
     ) {
         TopBar(
-            "Send Money",
+            title = stringResource(R.string.home_quick_action_send),
             leftIcon = Icons.Rounded.ArrowBack,
             onLeftIconClick = onNavigateBack,
             leftIconEnabled = isBackEnabled
@@ -152,7 +160,7 @@ private fun RecipientHeader(
     ) {
         Image(
             painter = painterResource(id = R.drawable.ic_default_user),
-            contentDescription = "Recipient avatar",
+            contentDescription = stringResource(R.string.send_recipient_avatar_cd),
             modifier = Modifier
                 .size(48.dp)
                 .clip(CircleShape)
@@ -163,15 +171,22 @@ private fun RecipientHeader(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold
             )
+            val joinDatePatternString = stringResource(R.string.send_joined_date_pattern)
+            val joinDateFormatter = remember(joinDatePatternString) {
+                DateTimeFormatter.ofPattern(joinDatePatternString)
+            }
             Text(
-                text = "Joined ${recipient.joinDate.format(DateTimeFormatter.ofPattern("MM.dd.yyyy"))}",
+                text = stringResource(
+                    R.string.send_joined_date,
+                    recipient.joinDate.format(joinDateFormatter)
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Spacer(Modifier.weight(1f))
         Text(
-            text = "Change",
+            text = stringResource(R.string.send_change_action),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold
@@ -201,7 +216,13 @@ private fun AmountDisplay(
                 fontWeight = FontWeight.Bold
             )
             Box {
-                Icon(Icons.Rounded.ArrowDropDown, contentDescription = "Change currency", modifier = Modifier.clickable { currencyMenuExpanded = true }.padding(end = 8.dp))
+                Icon(
+                    imageVector = Icons.Rounded.ArrowDropDown,
+                    contentDescription = stringResource(R.string.send_change_currency_cd),
+                    modifier = Modifier
+                        .clickable { currencyMenuExpanded = true }
+                        .padding(end = 8.dp)
+                )
 
                 DropdownMenu(
                     expanded = currencyMenuExpanded,
@@ -209,7 +230,7 @@ private fun AmountDisplay(
                 ) {
                     state.availableCurrencies.forEach { currency ->
                         DropdownMenuItem(
-                            text = { Text("${currency.currencyCode} (${currency.symbol})") },
+                            text = { Text(stringResource(R.string.send_currency_option, currency.currencyCode, currency.symbol)) },
                             onClick = {
                                 onCurrencyChange(currency.currencyCode)
                                 currencyMenuExpanded = false
@@ -219,20 +240,21 @@ private fun AmountDisplay(
                 }
             }
             Text(
-                text = state.amount.ifEmpty { "0" },
+                text = state.amount.ifEmpty { stringResource(R.string.common_zero) },
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold
             )
         }
         Text(
-            text = "1 EUR = 1.22 USD",
+            text = stringResource(R.string.send_exchange_rate_sample),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         if (state.isProcessing) {
             CircularProgressIndicator(modifier = Modifier.padding(top = 12.dp))
         }
-        state.errorMessage?.let {
+        val errorMessageText = state.errorMessageResId?.let { stringResource(it) } ?: state.errorMessage
+        errorMessageText?.let {
             Text(
                 text = it,
                 color = MaterialTheme.colorScheme.error,
@@ -248,7 +270,7 @@ private fun Keypad(
     onBackspaceClick: () -> Unit,
     onDoneClick: () -> Unit
 ) {
-    val buttons = "123456789"
+    val buttons = (1..9).joinToString("")
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -277,7 +299,7 @@ private fun Keypad(
                 modifier = Modifier.weight(1f)
             )
             KeypadButton(
-                text = "0",
+                text = stringResource(R.string.common_zero),
                 onClick = { onDigitClick('0') },
                 modifier = Modifier.weight(1f)
             )

@@ -1,18 +1,20 @@
 package com.payquick.app.transactions
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.payquick.R
 import com.payquick.domain.model.Transaction
 import com.payquick.domain.model.TransactionType
 import com.payquick.domain.usecase.FetchTransactionsPageUseCase
-import com.payquick.domain.usecase.LogoutUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.time.Month
 import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 import java.time.format.FormatStyle
+import java.time.format.TextStyle
 import java.util.Currency
 import java.util.Locale
 import javax.inject.Inject
@@ -32,6 +34,7 @@ import kotlinx.datetime.toLocalDateTime
 @HiltViewModel
 class TransactionsViewModel @Inject constructor(
     private val fetchTransactionsPage: FetchTransactionsPageUseCase,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TransactionsUiState())
@@ -112,7 +115,8 @@ class TransactionsViewModel @Inject constructor(
                         isLoading = false,
                         isFetchingMore = false,
                         endReached = currentPage >= totalPages,
-                        errorMessage = null
+                        errorMessage = null,
+                        errorMessageResId = null
                     )
                 }
 
@@ -120,13 +124,22 @@ class TransactionsViewModel @Inject constructor(
             }
             .onFailure { error ->
                 autoLoading = false
+                val fallbackRes = R.string.transactions_error_load
+                val message = error.message
                 _state.update {
                     it.copy(
                         isLoading = false,
                         isFetchingMore = false,
-                        errorMessage = error.message ?: "Unable to load transactions"
+                        errorMessage = message,
+                        errorMessageResId = message?.let { null } ?: fallbackRes
                     )
                 }
+                val event = if (message.isNullOrBlank()) {
+                    TransactionsEvent.ShowMessage(messageResId = fallbackRes)
+                } else {
+                    TransactionsEvent.ShowMessage(message = message)
+                }
+                _events.emit(event)
             }
     }
 
@@ -184,7 +197,7 @@ class TransactionsViewModel @Inject constructor(
             .sortedByDescending { it.key }
             .map { (monthYear, items) ->
                 TransactionUiGroup(
-                    monthLabel = monthYear.label(),
+                    monthLabel = monthYear.label(context),
                     items = items.sortedByDescending { it.dateTime }
                 )
             }
@@ -201,9 +214,9 @@ class TransactionsViewModel @Inject constructor(
 
         val counterparty = destinationId
         val directionLabel = if (isCredit) {
-            "Received from $counterparty"
+            context.getString(R.string.transactions_direction_received, counterparty)
         } else {
-            "Sent to $counterparty"
+            context.getString(R.string.transactions_direction_sent, counterparty)
         }
 
         val statusLabel = status.replaceFirstChar {
@@ -240,9 +253,9 @@ class TransactionsViewModel @Inject constructor(
             return compareValuesBy(this, other, MonthYear::year, MonthYear::month)
         }
 
-        fun label(): String {
+        fun label(context: Context): String {
             val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.getDefault())
-            return "$monthName $year"
+            return context.getString(R.string.transactions_month_label, monthName, year)
         }
     }
 

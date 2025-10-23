@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.payquick.R
@@ -53,12 +54,12 @@ fun TransactionDetailsScreen(
             .padding(16.dp)
     ) {
         TopBar(
-            title = "Transaction Details",
+            title = stringResource(R.string.transaction_details_title),
             leftIcon = Icons.AutoMirrored.Rounded.ArrowBack,
             onLeftIconClick = backAction.onBack,
             leftIconEnabled = backAction.isEnabled,
             rightIcon = Icons.Rounded.Download,
-            onRightIconClick = { /* TODO */ }
+            onRightIconClick = { }
         )
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -89,7 +90,7 @@ fun TransactionDetailsScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Paid via Creditcard",
+                text = stringResource(R.string.transaction_details_method_label),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -109,7 +110,7 @@ fun TransactionDetailsScreen(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Fund Transfer",
+                    text = stringResource(R.string.transaction_details_category_label),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
@@ -122,9 +123,9 @@ fun TransactionDetailsScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                TransactionDetailRow("Date", details.timestampLabel)
-                TransactionDetailRow("Tran ID", details.id)
-                TransactionDetailRow("Status", details.statusLabel)
+                TransactionDetailRow(stringResource(R.string.transaction_details_date_label), details.timestampLabel)
+                TransactionDetailRow(stringResource(R.string.transaction_details_id_label), details.id)
+                TransactionDetailRow(stringResource(R.string.transaction_details_status_label), details.statusLabel)
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -133,17 +134,17 @@ fun TransactionDetailsScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                TransactionDetailRow("Fee", "$0")
-                TransactionDetailRow("Narration", "Netflix")
-                TransactionDetailRow("Payment Channel", "Virtual Account")
+                TransactionDetailRow(stringResource(R.string.transaction_details_fee_label), stringResource(R.string.transaction_details_fee_value))
+                TransactionDetailRow(stringResource(R.string.transaction_details_narration_label), stringResource(R.string.transaction_details_narration_value))
+                TransactionDetailRow(stringResource(R.string.transaction_details_channel_label), stringResource(R.string.transaction_details_channel_value))
             }
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(
-            onClick = { /* TODO */ },
+            onClick = { },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Share Receipt")
+            Text(stringResource(R.string.transaction_details_share_receipt))
         }
     }
 }

@@ -1,9 +1,11 @@
 package com.payquick.app.receive
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.payquick.domain.usecase.GenerateMockReceiveCodeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -20,10 +22,12 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toLocalDateTime
+import com.payquick.R
 
 @HiltViewModel
 class ReceiveViewModel @Inject constructor(
-    private val generateMockReceiveCodeUseCase: GenerateMockReceiveCodeUseCase
+    private val generateMockReceiveCodeUseCase: GenerateMockReceiveCodeUseCase,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ReceiveUiState())
@@ -47,20 +51,20 @@ class ReceiveViewModel @Inject constructor(
             it.copy(
                 code = code,
                 link = link,
-                refreshedLabel = "Generated at $timestamp"
+                refreshedLabel = context.getString(R.string.receive_refreshed_label, timestamp)
             )
         }
     }
 
     fun copyLink() {
         viewModelScope.launch {
-            _events.emit(ReceiveEvent.ShowMessage("Link copied to clipboard"))
+            _events.emit(ReceiveEvent.ShowMessage(context.getString(R.string.receive_message_copied)))
         }
     }
 
     fun shareLink() {
         viewModelScope.launch {
-            _events.emit(ReceiveEvent.ShowMessage("Share sheet coming soon"))
+            _events.emit(ReceiveEvent.ShowMessage(context.getString(R.string.receive_message_share_coming)))
         }
     }
 }

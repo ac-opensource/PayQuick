@@ -26,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.payquick.R
 
 @Composable
 fun SwipeToSend(
@@ -75,7 +77,7 @@ fun SwipeToSend(
             )
         }
         Text(
-            text = "Send",
+            text = stringResource(R.string.swipe_to_send_label),
             color = MaterialTheme.colorScheme.onPrimary,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.align(Alignment.Center)

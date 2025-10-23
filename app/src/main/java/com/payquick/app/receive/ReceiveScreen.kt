@@ -40,6 +40,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.payquick.app.common.TopBar
 import com.payquick.app.common.rememberBackNavigationAction
+import androidx.compose.ui.res.stringResource
+import com.payquick.R
 
 @Composable
 fun ReceiveScreen(
@@ -92,13 +94,13 @@ private fun ReceiveContent(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         TopBar(
-            "Receive money",
+            stringResource(R.string.receive_title),
             leftIcon = Icons.Rounded.ArrowBack,
             onLeftIconClick = onNavigateBack,
             leftIconEnabled = isBackEnabled
         )
         Text(
-            text = "Share your secure code or payment link so the sender knows exactly where to route the funds.",
+            text = stringResource(R.string.receive_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -161,7 +163,7 @@ private fun ReceiveContent(
             ) {
                 Icon(imageVector = Icons.Rounded.ContentCopy, contentDescription = null)
                 Text(
-                    text = "Copy payment link",
+                    text = stringResource(R.string.receive_copy_link),
                     modifier = Modifier.padding(start = 12.dp),
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -174,7 +176,7 @@ private fun ReceiveContent(
             ) {
                 Icon(imageVector = Icons.Rounded.Share, contentDescription = null)
                 Text(
-                    text = "Share from PayQuick",
+                    text = stringResource(R.string.receive_share_link),
                     modifier = Modifier.padding(start = 12.dp),
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -183,7 +185,7 @@ private fun ReceiveContent(
                 onClick = onGenerateNewCode,
                 modifier = Modifier.align(Alignment.Start)
             ) {
-                Text("Generate a new code")
+                Text(stringResource(R.string.receive_generate_new_code))
             }
         }
 

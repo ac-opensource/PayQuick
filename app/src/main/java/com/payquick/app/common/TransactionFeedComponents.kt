@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.payquick.R
 
@@ -113,7 +114,11 @@ fun TransactionListCard(
                 ) {
                     Icon(
                         painter = painterResource(id = iconRes),
-                        contentDescription = if (item.isCredit) "Received" else "Sent",
+                        contentDescription = if (item.isCredit) {
+                            stringResource(R.string.transaction_cd_received)
+                        } else {
+                            stringResource(R.string.transaction_cd_sent)
+                        },
                         tint = iconTint
                     )
                 }

@@ -15,15 +15,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.payquick.R
 
 @Composable
 fun RetryErrorCard(
     message: String,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "We hit a snag",
-    retryLabel: String = "Try again"
+    title: String? = null,
+    retryLabel: String? = null
 ) {
+    val resolvedTitle = title ?: stringResource(R.string.common_retry_error_title)
+    val resolvedRetryLabel = retryLabel ?: stringResource(R.string.common_retry_error_action)
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
@@ -33,7 +37,7 @@ fun RetryErrorCard(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = title,
+                text = resolvedTitle,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
@@ -46,7 +50,7 @@ fun RetryErrorCard(
                 onClick = onRetry,
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onErrorContainer)
             ) {
-                Text(retryLabel)
+                Text(resolvedRetryLabel)
             }
         }
     }

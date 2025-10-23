@@ -1,5 +1,6 @@
 package com.payquick.app.auth
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +40,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -59,13 +61,11 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 
-private const val MFA_DISCLAIMER = "Demo only — enter anything to continue."
-
 data class MfaEnrollUiState(
     val secret: String,
     val code: String = "",
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
+    @StringRes val errorMessageResId: Int? = null,
     val setupComplete: Boolean = false
 )
 
@@ -81,24 +81,28 @@ class MfaEnrollViewModel @Inject constructor(
 
     fun onCodeChanged(value: String) {
         val filtered = value.filter { it.isDigit() }.take(6)
-        _state.update { it.copy(code = filtered, errorMessage = null) }
+        _state.update { it.copy(code = filtered, errorMessageResId = null) }
     }
 
     fun confirm() {
         if (_state.value.code.length < 6) {
-            _state.update { it.copy(errorMessage = "Enter a 6-digit code to continue") }
+            _state.update { it.copy(errorMessageResId = R.string.mfa_error_code_required) }
             return
         }
 
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, errorMessage = null) }
+            _state.update { it.copy(isLoading = true, errorMessageResId = null) }
             runCatching { authRepository.setMfaEnrollment(true) }
                 .onSuccess {
                     _state.update { it.copy(isLoading = false, setupComplete = true) }
                 }
-                .onFailure { error ->
-                    val message = error.message ?: "Unable to complete setup"
-                    _state.update { it.copy(isLoading = false, errorMessage = message) }
+                .onFailure {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessageResId = R.string.mfa_error_generic
+                        )
+                    }
                 }
         }
     }
@@ -236,12 +240,12 @@ private fun MfaEnrollContent(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Text(
-                text = "Set up Two-Factor Authentication",
+                text = stringResource(R.string.mfa_enroll_title),
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = MFA_DISCLAIMER,
+                text = stringResource(R.string.mfa_disclaimer),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -262,8 +266,8 @@ private fun MfaEnrollContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "Secret key",
+                    Text(
+                        text = stringResource(R.string.mfa_secret_label),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -281,7 +285,7 @@ private fun MfaEnrollContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Enter the 6-digit code from your authenticator app",
+                    text = stringResource(R.string.mfa_enroll_instruction),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -300,9 +304,9 @@ private fun MfaEnrollContent(
                         }
                     }
                 )
-                state.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                state.errorMessageResId?.let { resId ->
                     Text(
-                        text = message,
+                        text = stringResource(id = resId),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -310,7 +314,7 @@ private fun MfaEnrollContent(
             }
             if (state.setupComplete) {
                 Text(
-                    text = "You're all set! Tap continue to finish.",
+                    text = stringResource(R.string.mfa_enroll_complete_message),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center
@@ -338,7 +342,13 @@ private fun MfaEnrollContent(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text(if (state.setupComplete) "Continue" else "Confirm setup")
+                    Text(
+                        text = if (state.setupComplete) {
+                            stringResource(R.string.mfa_action_continue)
+                        } else {
+                            stringResource(R.string.mfa_enroll_confirm)
+                        }
+                    )
                 }
             }
         }
@@ -348,7 +358,7 @@ private fun MfaEnrollContent(
 data class MfaVerifyUiState(
     val code: String = "",
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
+    @StringRes val errorMessageResId: Int? = null,
     val verified: Boolean = false
 )
 
@@ -360,16 +370,16 @@ class MfaVerifyViewModel @Inject constructor() : ViewModel() {
 
     fun onCodeChanged(value: String) {
         val sanitized = value.filter { it.isDigit() }.take(6)
-        _state.update { it.copy(code = sanitized, errorMessage = null) }
+        _state.update { it.copy(code = sanitized, errorMessageResId = null) }
     }
 
     fun confirm() {
         if (_state.value.code.length < 6) {
-            _state.update { it.copy(errorMessage = "Enter a 6-digit code to continue") }
+            _state.update { it.copy(errorMessageResId = R.string.mfa_error_code_required) }
             return
         }
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, errorMessage = null) }
+            _state.update { it.copy(isLoading = true, errorMessageResId = null) }
             _state.update { it.copy(isLoading = false, verified = true) }
         }
     }
@@ -415,12 +425,12 @@ private fun MfaVerifyContent(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Text(
-                text = "Verify your code",
+                text = stringResource(R.string.mfa_verify_title),
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = MFA_DISCLAIMER,
+                text = stringResource(R.string.mfa_disclaimer),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -435,7 +445,7 @@ private fun MfaVerifyContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Enter the 6-digit code",
+                    text = stringResource(R.string.mfa_verify_instruction),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -454,9 +464,9 @@ private fun MfaVerifyContent(
                         }
                     }
                 )
-                state.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                state.errorMessageResId?.let { resId ->
                     Text(
-                        text = message,
+                        text = stringResource(id = resId),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -464,7 +474,7 @@ private fun MfaVerifyContent(
             }
             if (state.verified) {
                 Text(
-                    text = "Code accepted! Tap continue to finish.",
+                    text = stringResource(R.string.mfa_verify_complete_message),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center
@@ -492,7 +502,13 @@ private fun MfaVerifyContent(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text(if (state.verified) "Continue" else "Verify")
+                    Text(
+                        text = if (state.verified) {
+                            stringResource(R.string.mfa_action_continue)
+                        } else {
+                            stringResource(R.string.mfa_verify_confirm)
+                        }
+                    )
                 }
             }
         }

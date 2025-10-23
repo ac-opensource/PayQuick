@@ -1,5 +1,6 @@
 package com.payquick.app.transactions
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import java.time.LocalDateTime
 
@@ -12,6 +13,7 @@ data class TransactionsUiState(
     val endReached: Boolean = false,
     val groups: List<TransactionUiGroup> = emptyList(),
     val errorMessage: String? = null,
+    @StringRes val errorMessageResId: Int? = null,
     val searchQuery: String = "",
     val filter: TransactionListFilter = TransactionListFilter.ALL
 )

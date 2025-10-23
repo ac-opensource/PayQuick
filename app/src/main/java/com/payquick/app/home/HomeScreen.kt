@@ -49,6 +49,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.payquick.R
@@ -73,11 +75,17 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is HomeEvent.ShowMessage -> onShowSnackbar(event.message)
+                is HomeEvent.ShowMessage -> {
+                    val message = event.message ?: event.messageResId?.let(context::getString)
+                    if (!message.isNullOrBlank()) {
+                        onShowSnackbar(message)
+                    }
+                }
             }
         }
     }
@@ -132,6 +140,7 @@ private fun HomeContent(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             HomeTopBar(userName = state.headline, onLogout = onLogout)
+            val listError = state.errorMessageResId?.let { stringResource(it) } ?: state.errorMessage
 
             LazyColumn(
                 state = lazyListState,
@@ -153,28 +162,30 @@ private fun HomeContent(
                 }
                 item {
                     SectionHeader(
-                        title = "Transactions",
+                        title = stringResource(R.string.home_transactions_title),
                         trailingContent = {
                             TextButton(onClick = onViewAllActivity) {
-                                Text("View all")
+                                Text(stringResource(R.string.home_transactions_view_all))
                             }
                         }
                     )
                 }
+
+
             if (state.isLoading && state.transactionGroups.isEmpty()) {
                 transactionListSkeleton()
-            } else if (state.errorMessage != null && state.transactionGroups.isEmpty()) {
+            } else if (listError != null && state.transactionGroups.isEmpty()) {
                 item {
                     RetryErrorCard(
-                        message = state.errorMessage,
+                        message = listError,
                         onRetry = onRefresh
                     )
                 }
             } else if (state.transactionGroups.isEmpty() && !state.isLoading) {
                 item {
                     EmptyStateCard(
-                        title = "No activity yet",
-                        body = "When you start sending or receiving money you'll see the latest movement here."
+                        title = stringResource(R.string.home_empty_title),
+                        body = stringResource(R.string.home_empty_body)
                     )
                 }
             } else {
@@ -183,14 +194,14 @@ private fun HomeContent(
                         TransactionGroupHeader(monthLabel = group.monthLabel)
                     }
                     items(group.items, key = { it.id }) { transaction ->
+                        val direction = if (transaction.isCredit) {
+                            stringResource(R.string.home_transaction_direction_received, transaction.title)
+                        } else {
+                            stringResource(R.string.home_transaction_direction_sent, transaction.title)
+                        }
                         TransactionListCard(
                             item = transaction.toListItem(),
                             onClick = {
-                                val direction = if (transaction.isCredit) {
-                                    "Received from ${transaction.title}"
-                                } else {
-                                    "Sent to ${transaction.title}"
-                                }
                                 onTransactionClick(
                                     TransactionDetails(
                                         id = transaction.id,
@@ -225,7 +236,7 @@ private fun HomeContent(
                 if (state.endReached) {
                     item {
                         Text(
-                            text = "You've reached the end of your transactions.",
+                            text = stringResource(R.string.home_end_of_list),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
@@ -268,7 +279,7 @@ private fun BalanceCard(state: HomeUiState) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Your balance:",
+                        text = stringResource(R.string.home_balance_label),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -284,7 +295,7 @@ private fun BalanceCard(state: HomeUiState) {
                         )
 
                         Text(
-                            text = "Consolidated amount",
+                            text = stringResource(R.string.home_balance_subtitle),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -306,13 +317,13 @@ private fun QuickActionsRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         QuickActionButton(
-            label = "Send Money",
+            label = stringResource(R.string.home_quick_action_send),
             icon = R.drawable.send_money_24px,
             onClick = onSendMoney,
             modifier = Modifier.weight(1f)
         )
         QuickActionButton(
-            label = "Receive Money",
+            label = stringResource(R.string.home_quick_action_receive),
             icon = R.drawable.qr_code_2_add_24px,
             onClick = onRequestMoney,
             modifier = Modifier.weight(1f)
@@ -393,7 +404,7 @@ private fun HomeTopBar(userName: String, onLogout: () -> Unit) {
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_default_user),
-                contentDescription = "Account avatar",
+                contentDescription = stringResource(R.string.home_avatar_cd),
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
@@ -410,14 +421,14 @@ private fun HomeTopBar(userName: String, onLogout: () -> Unit) {
         IconButton(onClick = { }) {
             Icon(
                 imageVector = Icons.Rounded.Notifications,
-                contentDescription = "Notifications"
+                contentDescription = stringResource(R.string.home_notifications_cd)
             )
         }
 
         IconButton(onClick = onLogout) {
             Icon(
                 imageVector = Icons.Rounded.ExitToApp,
-                contentDescription = "Log out"
+                contentDescription = stringResource(R.string.home_log_out_cd)
             )
         }
     }

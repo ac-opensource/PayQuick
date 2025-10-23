@@ -1,4 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PayQuick</string>
+    <string name="login_title_prefix">Login to Access Your</string>
+    <string name="login_title_highlight">Travel Tickets</string>
+    <string name="login_email_placeholder">Enter your email</string>
+    <string name="login_password_placeholder">Enter your password</string>
+    <string name="login_remember_me">Remember me</string>
+    <string name="login_forgot_password">Forgot password?</string>
+    <string name="login_action">Login</string>
+    <string name="login_social_title">Or login with</string>
+    <string name="login_social_google">Google</string>
+    <string name="login_social_facebook">Facebook</string>
+    <string name="login_no_account_prompt">Don\'t have an account?</string>
+    <string name="login_sign_up">Create an account</string>
+    <string name="login_error_email_required">Email is required</string>
+    <string name="login_error_credentials">Enter your credentials</string>
+    <string name="login_error_invalid_email">Enter a valid email address</string>
+    <string name="login_error_generic">Unable to sign in</string>
+
+    <string name="mfa_enroll_title">Set up Two-Factor Authentication</string>
+    <string name="mfa_disclaimer">Demo only — enter anything to continue.</string>
+    <string name="mfa_secret_label">Secret key</string>
+    <string name="mfa_enroll_instruction">Enter the 6-digit code from your authenticator app</string>
+    <string name="mfa_enroll_complete_message">You\'re all set! Tap continue to finish.</string>
+    <string name="mfa_enroll_confirm">Confirm setup</string>
+    <string name="mfa_action_continue">Continue</string>
+    <string name="mfa_error_code_required">Enter a 6-digit code to continue</string>
+    <string name="mfa_error_generic">Unable to complete setup</string>
+    <string name="mfa_verify_title">Verify your code</string>
+    <string name="mfa_verify_instruction">Enter the 6-digit code</string>
+    <string name="mfa_verify_complete_message">Code accepted! Tap continue to finish.</string>
+    <string name="mfa_verify_confirm">Verify</string>
+
+    <string name="transaction_details_title">Transaction Details</string>
+    <string name="transaction_details_method_label">Paid via Creditcard</string>
+    <string name="transaction_details_category_label">Fund Transfer</string>
+    <string name="transaction_details_date_label">Date</string>
+    <string name="transaction_details_id_label">Tran ID</string>
+    <string name="transaction_details_status_label">Status</string>
+    <string name="transaction_details_fee_label">Fee</string>
+    <string name="transaction_details_fee_value">$0</string>
+    <string name="transaction_details_narration_label">Narration</string>
+    <string name="transaction_details_narration_value">Netflix</string>
+    <string name="transaction_details_channel_label">Payment Channel</string>
+    <string name="transaction_details_channel_value">Virtual Account</string>
+    <string name="transaction_details_share_receipt">Share Receipt</string>
+
+    <string name="receive_title">Receive money</string>
+    <string name="receive_subtitle">Share your secure code or payment link so the sender knows exactly where to route the funds.</string>
+    <string name="receive_copy_link">Copy payment link</string>
+    <string name="receive_share_link">Share from PayQuick</string>
+    <string name="receive_generate_new_code">Generate a new code</string>
+    <string name="receive_refreshed_label">Generated at %s</string>
+    <string name="receive_message_copied">Link copied to clipboard</string>
+    <string name="receive_message_share_coming">Share sheet coming soon</string>
+
+    <string name="send_change_action">Change</string>
+    <string name="send_joined_date">Joined %1$s</string>
+    <string name="send_joined_date_pattern">MM.dd.yyyy</string>
+    <string name="send_change_currency_cd">Change currency</string>
+    <string name="send_currency_option">%1$s (%2$s)</string>
+    <string name="send_exchange_rate_sample">1 EUR = 1.22 USD</string>
+    <string name="send_error_amount_required">Enter an amount</string>
+    <string name="send_error_amount_invalid">Enter a valid amount</string>
+    <string name="send_error_generic">Unable to send money</string>
+    <string name="send_transfer_scheduled">Transfer scheduled</string>
+    <string name="send_recipient_avatar_cd">Recipient avatar</string>
+    <string name="send_recipient_name_katarina">Katarina</string>
+    <string name="send_recipient_name_alex">Alex Morgan</string>
+    <string name="send_recipient_name_jamie">Jamie Rivera</string>
+
+    <string name="session_error_logout">Unable to log out</string>
+
+    <string name="common_retry_error_title">We hit a snag</string>
+    <string name="common_retry_error_action">Try again</string>
+    <string name="top_bar_back">Back</string>
+    <string name="swipe_to_send_label">Send</string>
+    <string name="transaction_cd_received">Received</string>
+    <string name="transaction_cd_sent">Sent</string>
+
+    <string name="home_transactions_title">Transactions</string>
+    <string name="home_transactions_view_all">View all</string>
+    <string name="home_empty_title">No activity yet</string>
+    <string name="home_empty_body">When you start sending or receiving money you\'ll see the latest movement here.</string>
+    <string name="home_end_of_list">You\'ve reached the end of your transactions.</string>
+    <string name="home_balance_label">Your balance:</string>
+    <string name="home_balance_subtitle">Consolidated amount</string>
+    <string name="home_quick_action_send">Send Money</string>
+    <string name="home_quick_action_receive">Receive Money</string>
+    <string name="home_avatar_cd">Account avatar</string>
+    <string name="home_notifications_cd">Notifications</string>
+    <string name="home_log_out_cd">Log out</string>
+    <string name="home_headline_named">Hi, %1$s</string>
+    <string name="home_headline_default">Welcome</string>
+    <string name="home_subheadline_default">Let\'s get you moving money</string>
+    <string name="home_last_refreshed">Updated %1$s</string>
+    <string name="home_error_activity">Unable to load activity</string>
+    <string name="home_error_activity_more">Unable to load more activity</string>
+    <string name="home_transaction_direction_received">Received from %1$s</string>
+    <string name="home_transaction_direction_sent">Sent to %1$s</string>
+
+    <string name="transactions_error_load">Unable to load transactions</string>
+    <string name="transactions_direction_received">Received from %1$s</string>
+    <string name="transactions_direction_sent">Sent to %1$s</string>
+    <string name="transactions_title">Transactions</string>
+    <string name="transactions_empty_title">No activity</string>
+    <string name="transactions_empty_body">As you send or receive money, your transactions will show up here.</string>
+    <string name="transactions_empty_search">No results for “%1$s”. Try a different search.</string>
+    <string name="transactions_end_of_list">You\'ve reached the end of your transactions.</string>
+    <string name="transactions_retry">Retry</string>
+    <string name="transactions_search_placeholder">Search transactions</string>
+    <string name="transactions_clear_search_cd">Clear search</string>
+    <string name="transactions_filter_all">All</string>
+    <string name="transactions_filter_sent">Sent</string>
+    <string name="transactions_filter_received">Received</string>
+    <string name="transactions_month_label">%1$s %2$d</string>
+
+    <string name="common_zero">0</string>
 </resources>
