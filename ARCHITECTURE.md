@@ -25,6 +25,7 @@ This keeps everything easy to test (fake the repos, unit test the use cases, hit
 - Data module (:data) 
   - Retrofit/OkHttp clients, auth plumbing (AuthInterceptor, TokenAuthenticator, PayQuickApi), session helpers (SessionManager), and Hilt bindings.
   - Timber for logging, interceptors for auth, encrypted session storage so state stays reactive and safe.
+- See README.md for the project structure
 
 ## Data Flow & Interaction
 
