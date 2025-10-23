@@ -67,3 +67,7 @@ ARCHITECTURE.md               // Detailed architecture notes
 
 ## Verification
 Due to the sandboxed environment, Gradle tasks could not be executed here. Please run `./gradlew lintDebug testDebugUnitTest` locally once the wrapper has been generated to verify the build.
+
+## Architecture Diagram (please see `ARCHITECTURE.md`)
+
+![diagram_architecture.png](diagram_architecture.png)

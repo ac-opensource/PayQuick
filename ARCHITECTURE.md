@@ -1,5 +1,7 @@
 # PayQuick Frontend Architecture (Android)
 
+![diagram_architecture.png](diagram_architecture.png)
+
 It’s basically the classic 3‑tier clean setup, nothing fancy.
 We’ve got app for UI/state, domain for the pure Kotlin contracts + use cases, and data for the Retrofit/auth/session stuff.
 I skipped mappers or over-engineering or overthinking the models and how they are shared across modules,
