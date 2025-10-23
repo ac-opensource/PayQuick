@@ -3,12 +3,13 @@
 This repository contains the Android implementation of the PayQuick money movement challenge. The app is written in Kotlin using Jetpack Compose, Hilt for dependency injection, and Retrofit for networking. The high-level architecture notes live in `ARCHITECTURE.md`.
 
 ## Features
-- Secure login screen backed by the access/refresh token flow, complete with validation, password visibility toggle, and snackbar feedback.
+- Secure login screen backed by the access/refresh token flow, complete with validation.
 - Material 3 expressive home screen with balance hero card, quick actions, recent activity, and a path to the full ledger.
-- Mock send flow with quick amount chips, recipient suggestions, optimistic success state, and snackbar feedback.
-- Receive flow that generates shareable codes/links and surfaces convenient copy/share actions.
+- Mock send flow with recipient suggestions, optimistic success state, and snackbar feedback.
+- Mock receive flow that generates shareable codes/links and surfaces convenient copy/share actions.
 - Paginated transaction history with logout built into the top app bar and automatic session refresh provided by the authenticator.
 - Reactive session bootstrap, token refresh, and transaction fetch powered by the mock PayQuick API.
+- Encrypted session storage backed by Android Keystore to keep access and refresh tokens protected at rest.
 
 ## Getting Started
 

@@ -1,44 +1,62 @@
 # PayQuick Frontend Architecture (Android)
 
+It’s basically the classic 3‑tier clean setup, nothing fancy.
+We’ve got app for UI/state, domain for the pure Kotlin contracts + use cases, and data for the Retrofit/auth/session stuff.
+I skipped mappers or over-engineering or overthinking the models and how they are shared across modules,
+
+but you still get the clean separation:
+- UI only talks to the interfaces,
+- data plugs in the real implementations,
+- and domain stays oblivious to Android.
+
+This keeps everything easy to test (fake the repos, unit test the use cases, hit the ViewModels in isolation) while letting each layer evolve without needing complicated refactor and changes over the others.
+
 ## Component Overview
 
-- **App module (`com.payquick.app`)** – Jetpack Compose presentation layer organised with a screaming-architecture layout. Feature packages (`auth`, `home`, `transactions`, `send`, `receive`, `session`) expose route-level composables that drive the Material 3 UI and navigation host while keeping session orchestration separate.
-- **State management** – Each screen owns a `ViewModel` that emits immutable `UiState` through `StateFlow` and surfaces one-off side effects through `SharedFlow` event channels. Presentation code never touches repositories directly; it depends on domain use cases.
-- **Domain module (`:domain`)** – Pure Kotlin module containing canonical models, repository contracts, and application-specific use cases (`ObserveSessionUseCase`, `FetchTransactionsPageUseCase`, `SubmitMockTransferUseCase`, etc.). Constructors are `@Inject`-able to keep DI friction low.
-- **Data module (`:data`)** – Android library that fulfils domain contracts using Retrofit/OkHttp, Kotlinx Serialization, and DataStore. It provides networking/auth plumbing (`AuthInterceptor`, `TokenAuthenticator`, `PayQuickApi`) plus persistence helpers (`SessionManager`). Hilt modules live here.
-- **Cross-cutting infrastructure** – Logging uses Timber, networking honours bearer-token auth with automatic refresh, and DataStore keeps session state reactive for all layers.
+- Session handling lives in retrofit interceptors, not inside the screens.
+- Presentation/App module (com.payquick.app)
+  - Jetpack Compose feature packages (auth, home, transactions, send, receive, session, etc.) wired to the nav host.
+  - State management
+    - Every screen has its own ViewModel exposing a StateFlow of immutable UI state plus a SharedFlow for one-off events. 
+    - ViewModels only talk to domain use cases.
+- Domain module (:domain)
+  - Plain Kotlin models, repository interfaces, and use cases. 
+  - Constructors are @Inject so Hilt drops them where needed.
+- Data module (:data) 
+  - Retrofit/OkHttp clients, auth plumbing (AuthInterceptor, TokenAuthenticator, PayQuickApi), session helpers (SessionManager), and Hilt bindings.
+  - Timber for logging, interceptors for auth, encrypted session storage so state stays reactive and safe.
 
 ## Data Flow & Interaction
 
-1. User actions in Compose trigger `UiAction`s to the relevant `ViewModel`.
-2. `ViewModel` invokes domain use cases on `viewModelScope` with appropriate dispatcher.
-3. Use cases call repository APIs; repositories orchestrate network calls (Retrofit) and persist session snapshots via DataStore.
-4. Network layer attaches auth headers via `AuthInterceptor`. On 401, it delegates to `SessionManager` which refreshes tokens using stored refresh token and retries transparently.
-5. Results propagate back as `Result` objects; `ViewModel` reduces them into new `UiState`, which re-renders the Compose UI.
-6. Side effects (navigation, toasts) emitted through `SharedFlow` channels consumed by UI or a `Navigator` helper.
+1. Compose surfaces user intent to ViewModel.
+2. ViewModel calls a domain use case on viewModelScope.
+3. Use case hits a repository; repository does the Retrofit call (if applicable) and updates session in encrypted storage.
+4. Network stack adds auth headers. 401s trigger the refresh flow automatically.
+5. Results bubble back as Result objects. ViewModel reduces into new UI state and Compose re-renders.
+6. Side effects (navigation, snackbars) are listened to through SharedFlow to the UI.
 
 ## Security Considerations
 
-- **Token Storage**: Session tokens live in a `Preferences` DataStore via `SessionManager`. They are not encrypted, which is acceptable for the challenge scope but would need hardening before production.
-- **Transport**: The app targets the mock API over plain HTTP (`http://10.0.2.2:3000/api/`). TLS, hostname verification, and certificate pinning are intentionally out of scope.
-- **Authentication Flow**: Only username/password login is implemented. There is no MFA, account recovery, or session expiry UI; backend refresh tokens keep sessions alive until logout.
-- **Input Handling**: Forms perform basic validation (non-blank email/password, positive transfer amounts) but no additional sanitisation or server-side protection is in place.
-- **Threat Surface**: The app does not set `FLAG_SECURE`, integrate SafetyNet/Play Integrity, or guard against overlay attacks. Those measures remain future work.
+- Token storage - Access/refresh tokens live in SessionManager, backed by EncryptedSharedPreferences (Android Keystore under the hood).
+- Transport - Talking to the mock API over http://10.0.2.2:3000/api/.
+- Auth flow - Username/password only. MFA is mocked out, no recovery flow, no session expiry UI. Refresh token keeps things alive until logout.
+- Input handling - Basic validation on forms.
+- Threat surface - No FLAG_SECURE, Play Integrity, or overlay protections yet. 
 
 ## Maintainability & Extensibility
 
-- **Modularization**: Three-module clean split (`app`, `domain`, `data`) keeps dependencies pointing inward and makes it trivial to unit-test domain logic or swap data implementations.
-- **Dependency Injection**: Hilt powers constructor injection throughout – domain use cases drop straight into presentation, while data-level bindings live in `data/di` modules.
-- **Testing Strategy**: ViewModels can be exercised with fake use cases, domain logic with fake repositories, and Retrofit endpoints via MockWebServer sitting behind `PayQuickApi`.
-- **Design System**: `PayQuickTheme` centralises the expressive Material 3 palette, typography, and rounded shapes so features stay visually consistent.
-- **Analytics & Logging**: Timber-based logging remains centralised in the `Application` class; analytics providers can plug in behind interfaces when needed.
+- Modularisation - app, domain, data point inward so you can swap implementations and test each layer without hated spaghetti.
+- DI - Hilt glues everything: domain use cases drop straight into ViewModels, bindings sit in data/di.
+- Testing - ViewModels exercise nicely with fake use cases; domain logic with fake repos; network code rides behind MockWebServer.
+- Design system - PayQuickTheme keeps colors/typography consistent across screens.
+- Telemetry - Timber centralised in Application; easy to swap in crash/analytics hooks later.
 
 ## Key Decisions & Trade-offs
 
-- **Jetpack Compose vs XML**: Compose chosen for faster iteration and declarative UI; trade-off is steeper learning curve, but mitigated by Compose stability and tooling.
-- **MVVM + StateFlow**: Provides unidirectional data flow without full Redux overhead. Trade-off: requires discipline to avoid mutable state leaks; solved via sealed `UiState` and reducer pattern.
-- **Hilt DI**: Simplifies dependency graphs vs manual factories. Cost is build-time overhead, acceptable for improved testability.
-- **Retrofit/OkHttp**: Mature ecosystem with interceptors for auth and logging. Alternative Ktor considered but Retrofit better fits Android team skills.
-- **No Local Cache**: Data is fetched on demand from the mock API. There is no Room/SQL layer today, so offline support would require future investment.
-- **Feature Modularization**: Increases initial setup but supports scaling team and codebase, facilitating dynamic feature delivery.
-- **Token Refresh via Authenticator**: Centralized refresh avoids scattering logic; trade-off is reliance on the OkHttp pipeline, mitigated slightly by the lightweight `TokenAuthenticator` implementation.
+- Compose > XML - Faster iteration, declarative ergonomics. Slight learning curve, worth it.
+- MVVM + StateFlow - Gives unidirectional data flow without hauling in a full Redux stack. Requires discipline around mutation, solved with immutable state objects.
+- Hilt - Saves you from manual factories. I considered Koin but I think overall Hilt is better for performance and safety.
+- Retrofit/OkHttp - Reliable, well-known. I considered ktor but Retrofit/Okhttp is easy for new teammates to recognise and interceptors are a game changer for token refresh mechanism.
+- No local cache yet - Everything comes straight from the mock API. Offline/Room would be a future add.
+- Feature packaging - Screaming architecture layout makes it obvious where code lives, supports splitting into feature modules later.
+- Token refresh via authenticator - Centralised interception keeps auth logic out of every call. Depends on okhttp pipeline, but the wrapper is light and well-contained.
