@@ -26,6 +26,12 @@ class SessionManager @Inject constructor(
         initialValue = null
     )
 
+    val isMfaEnrolled: StateFlow<Boolean> = preferences.mfaEnrolled.stateIn(
+        scope = scope,
+        started = SharingStarted.Eagerly,
+        initialValue = false
+    )
+
     suspend fun saveSession(session: Session) {
         preferences.saveSession(session)
     }
@@ -59,6 +65,10 @@ class SessionManager @Inject constructor(
 
     suspend fun clear() {
         preferences.clear()
+    }
+
+    suspend fun setMfaEnrolled(value: Boolean) {
+        preferences.setMfaEnrolled(value)
     }
 
     data class SessionUserSnapshot(

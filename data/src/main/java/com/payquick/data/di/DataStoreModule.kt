@@ -1,15 +1,14 @@
 package com.payquick.data.di
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStoreFile
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 private const val SESSION_STORE_NAME = "session_prefs"
@@ -20,9 +19,22 @@ object DataStoreModule {
 
     @Provides
     @Singleton
-    fun providePreferenceDataStore(
+    fun provideMasterKey(
         @ApplicationContext context: Context
-    ): DataStore<Preferences> = PreferenceDataStoreFactory.create(
-        produceFile = { context.preferencesDataStoreFile(SESSION_STORE_NAME) }
+    ): MasterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+
+    @Provides
+    @Singleton
+    fun provideEncryptedSharedPreferences(
+        @ApplicationContext context: Context,
+        masterKey: MasterKey
+    ): SharedPreferences = EncryptedSharedPreferences.create(
+        context,
+        SESSION_STORE_NAME,
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
 }

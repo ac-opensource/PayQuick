@@ -28,7 +28,7 @@ fun TopBar(
     onRightIconClick: (() -> Unit)? = null
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (leftIcon != null && onLeftIconClick != null) {

@@ -26,6 +26,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.payquick.app.auth.LoginScreen
+import com.payquick.app.auth.MfaEnrollScreen
+import com.payquick.app.auth.MfaVerifyScreen
 import com.payquick.app.designsystem.PayQuickTheme
 import com.payquick.app.home.HomeScreen
 import com.payquick.app.navigation.Home
@@ -36,6 +38,8 @@ import com.payquick.app.navigation.Receive
 import com.payquick.app.navigation.Send
 import com.payquick.app.navigation.TransactionDetails
 import com.payquick.app.navigation.Transactions
+import com.payquick.app.navigation.MfaEnroll
+import com.payquick.app.navigation.MfaVerify
 import com.payquick.app.receive.ReceiveScreen
 import com.payquick.app.send.SendScreen
 import com.payquick.app.session.SessionEvent
@@ -58,6 +62,16 @@ fun PayQuickApp() {
             if (sessionState.isLoading) return@LaunchedEffect
             if (!hasCompletedSplash.value) return@LaunchedEffect
             val target = if (sessionState.session == null) Login else Home
+            val currentRoute = navController.currentDestination?.route
+            if (target == Home) {
+                val mfaRoutes = setOf(
+                    MfaEnroll::class.qualifiedName ?: MfaEnroll::class.simpleName,
+                    MfaVerify::class.qualifiedName ?: MfaVerify::class.simpleName
+                )
+                if (currentRoute != null && currentRoute in mfaRoutes) {
+                    return@LaunchedEffect
+                }
+            }
             val targetRoute = target::class.qualifiedName ?: target::class.simpleName
             if (navController.currentDestination?.route == targetRoute) return@LaunchedEffect
             navController.navigate(target) {
@@ -127,7 +141,22 @@ private fun PayQuickNavHost(
         }
         composable<Login> {
             LoginScreen(
-                onLoginSuccess = {
+                onNavigateToMfaEnroll = {
+                    navController.navigate(MfaEnroll) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToMfaVerify = {
+                    navController.navigate(MfaVerify) {
+                        launchSingleTop = true
+                    }
+                },
+                onShowSnackbar = onShowSnackbar
+            )
+        }
+        composable<MfaEnroll> {
+            MfaEnrollScreen(
+                onSetupComplete = {
                     navController.navigate(Home) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             inclusive = true
@@ -136,8 +165,21 @@ private fun PayQuickNavHost(
                         launchSingleTop = true
                         restoreState = true
                     }
-                },
-                onShowSnackbar = onShowSnackbar
+                }
+            )
+        }
+        composable<MfaVerify> {
+            MfaVerifyScreen(
+                onVerificationComplete = {
+                    navController.navigate(Home) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            inclusive = true
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
             )
         }
         composable<Home> {

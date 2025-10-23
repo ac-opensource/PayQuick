@@ -52,12 +52,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.payquick.R
+import com.payquick.app.common.EmptyStateCard
+import com.payquick.app.common.RetryErrorCard
 import com.payquick.app.common.SquigglyLoadingIndicator
 import com.payquick.app.common.TransactionGroupHeader
 import com.payquick.app.common.TransactionListCard
 import com.payquick.app.common.TransactionListItemUi
-import com.payquick.app.common.EmptyStateCard
-import com.payquick.app.common.RetryErrorCard
+import com.payquick.app.common.transactionListSkeleton
 import com.payquick.app.navigation.TransactionDetails
 
 @Composable
@@ -109,6 +110,7 @@ private fun HomeContent(
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
     val lazyListState = rememberLazyListState()
+    val isRefreshing = state.isLoading && state.transactionGroups.isNotEmpty()
     val isScrolledToEnd by remember {
         derivedStateOf {
             val lastVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()
@@ -124,7 +126,7 @@ private fun HomeContent(
 
     PullToRefreshBox(
         state = pullToRefreshState,
-        isRefreshing = state.isLoading,
+        isRefreshing = isRefreshing,
         onRefresh = onRefresh,
         modifier = modifier
     ) {
@@ -159,7 +161,9 @@ private fun HomeContent(
                         }
                     )
                 }
-            if (state.errorMessage != null && state.transactionGroups.isEmpty()) {
+            if (state.isLoading && state.transactionGroups.isEmpty()) {
+                transactionListSkeleton()
+            } else if (state.errorMessage != null && state.transactionGroups.isEmpty()) {
                 item {
                     RetryErrorCard(
                         message = state.errorMessage,

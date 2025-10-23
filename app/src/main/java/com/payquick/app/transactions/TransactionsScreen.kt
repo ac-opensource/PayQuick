@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.ExitToApp
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -43,13 +42,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.payquick.app.common.EmptyStateCard
 import com.payquick.app.common.SquigglyLoadingIndicator
 import com.payquick.app.common.TopBar
-import com.payquick.app.common.EmptyStateCard
 import com.payquick.app.common.RetryErrorCard
 import com.payquick.app.common.TransactionGroupHeader
 import com.payquick.app.common.TransactionListCard
 import com.payquick.app.common.TransactionListItemUi
+import com.payquick.app.common.transactionListSkeleton
 import com.payquick.app.common.rememberBackNavigationAction
 import com.payquick.app.navigation.TransactionDetails
 
@@ -106,6 +106,7 @@ private fun TransactionsContent(
     modifier: Modifier = Modifier
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
+    val isRefreshing = state.isLoading && state.groups.isNotEmpty()
 
     val listState = rememberLazyListState()
     val reachedBottom by remember {
@@ -132,7 +133,7 @@ private fun TransactionsContent(
 
         PullToRefreshBox(
             state = pullToRefreshState,
-            isRefreshing = state.isLoading,
+            isRefreshing = isRefreshing,
             onRefresh = onRefresh,
             modifier = Modifier.fillMaxSize()
         ) {
@@ -156,7 +157,7 @@ private fun TransactionsContent(
                 }
 
                 if (state.isLoading && state.groups.isEmpty()) {
-                    // Handled by Pull-to-refresh indicator
+                    transactionListSkeleton()
                 } else if (state.errorMessage != null && state.groups.isEmpty()) {
                     item {
                         RetryErrorCard(
@@ -165,15 +166,14 @@ private fun TransactionsContent(
                         )
                     }
                 } else if (state.groups.isEmpty()) {
-                    val emptyBody = if (state.searchQuery.isBlank()) {
-                        "As you send or receive money, your transactions will show up here."
-                    } else {
-                        "No results for \"${state.searchQuery}\". Try a different search."
-                    }
                     item {
                         EmptyStateCard(
                             title = "No activity",
-                            body = emptyBody
+                            body = if (state.searchQuery.isBlank()) {
+                                "As you send or receive money, your transactions will show up here."
+                            } else {
+                                "No results for \"${state.searchQuery}\". Try a different search."
+                            }
                         )
                     }
                 } else {
@@ -269,8 +269,7 @@ private fun TransactionFilterRow(
 ) {
     FlowRow(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp),
+            .fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {

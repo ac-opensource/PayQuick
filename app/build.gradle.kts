@@ -60,7 +60,7 @@ android {
 
 dependencies {
     implementation("androidx.compose.material3:material3:1.4.0")
-    val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
+    val composeBom = platform("androidx.compose:compose-bom:2025.10.01")
 
     implementation(composeBom)
     androidTestImplementation(composeBom)
@@ -74,7 +74,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.1")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3:1.2.1")
+    implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material3:material3-adaptive:1.0.0-alpha05")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("com.google.android.material:material:1.12.0")

@@ -24,6 +24,12 @@ object Transactions : PayQuickRoute
 object Login : PayQuickRoute
 
 @Serializable
+object MfaEnroll : PayQuickRoute
+
+@Serializable
+object MfaVerify : PayQuickRoute
+
+@Serializable
 data class TransactionDetails(
     val id: String,
     val amountLabel: String,

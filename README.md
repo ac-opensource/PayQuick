@@ -32,33 +32,34 @@ This repository contains the Android implementation of the PayQuick money moveme
 
 ## Project Structure
 ```
-app/                          // Android app module (Compose UI + navigation shell)
+app/                          // Android app module with Compose UI + navigation host
   src/main/java/com/payquick/
-    MainActivity.kt           // Entry point wired to Hilt
+    MainActivity.kt           // Hilt entry Activity
     PayQuickAndroidApplication.kt
     app/
-      PayQuickApp.kt          // Nav host + top-level scaffolding
-      auth/                   // Login screen + ViewModel/events/state
-      common/                 // Reusable UI components (top bar, loaders, swipe-to-send)
-      designsystem/           // PayQuickTheme and palette
+      PayQuickApp.kt          // Sets up NavHost and scaffolding
+      auth/                   // Login + MFA flows and state holders
+      common/                 // Shared UI components (top bar, loading, feed)
+      designsystem/           // PayQuick theme, typography, palette
       home/                   // Home dashboard screen + ViewModel
-      navigation/             // Typed route definitions
+      navigation/             // Navigation destinations and graph wiring
       receive/                // Mock “request money” flow
-      send/                   // Mock “send money” flow
-      session/                // Session observer + logout orchestration
+      send/                   // Mock “send money” flow + quick amounts
+      session/                // Session bootstrap + logout orchestration
+      splash/                 // Splash screen gating session availability
       transactions/           // Paginated ledger screen + ViewModel
 domain/                       // Pure Kotlin models, repository contracts, use cases
   src/main/kotlin/com/payquick/domain/
-    model/
-    repository/
-    usecase/
-data/                         // Retrofit/Auth/DataStore implementations + Hilt bindings
+    model/                    // Domain data classes
+    repository/               // Interfaces consumed by the app layer
+    usecase/                  // Business logic entry points
+data/                         // Retrofit clients, persistence, and Hilt bindings
   src/main/java/com/payquick/data/
-    auth/
-    di/
-    network/
-    session/
-    transactions/
+    auth/                     // Auth repository implementation
+    di/                       // Hilt modules (network/auth/session bindings)
+    network/                  // Retrofit API, interceptors, DTOs
+    session/                  // Session persistence via encrypted SharedPreferences
+    transactions/             // Transaction repository implementation
 fe_challenge_api/             // Node + Express mock backend
 ARCHITECTURE.md               // Detailed architecture notes
 ```

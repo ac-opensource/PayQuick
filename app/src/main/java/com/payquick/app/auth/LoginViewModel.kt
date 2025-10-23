@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -33,11 +34,15 @@ class LoginViewModel @Inject constructor(
         _state.update { it.copy(password = value, errorMessage = null) }
     }
 
-    fun onTogglePasswordVisibility() {
-        _state.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
+    fun onRememberMeChanged(value: Boolean) {
+        _state.update { it.copy(rememberMe = value) }
     }
 
     fun submit() {
+        login()
+    }
+
+    private fun login() {
         val current = _state.value
         if (!current.isFormValid || current.isLoading) {
             _state.update { it.copy(errorMessage = it.errorMessage ?: "Enter your credentials") }
@@ -48,8 +53,10 @@ class LoginViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             val result = authRepository.login(current.email.trim(), current.password)
             result.onSuccess {
+                val enrolled = authRepository.isMfaEnrolled.first()
                 _state.update { it.copy(isLoading = false) }
-                _events.emit(LoginEvent.LoggedIn)
+                val event = if (enrolled) LoginEvent.NavigateToMfaVerify else LoginEvent.NavigateToMfaEnroll
+                _events.emit(event)
             }.onFailure { error ->
                 val message = error.message ?: "Unable to sign in"
                 _state.update { it.copy(isLoading = false, errorMessage = message) }

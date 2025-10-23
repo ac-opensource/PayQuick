@@ -19,6 +19,7 @@ class DefaultAuthRepository @Inject constructor(
 ) : AuthRepository {
 
     override val session = sessionManager.session
+    override val isMfaEnrolled = sessionManager.isMfaEnrolled
 
     override suspend fun login(email: String, password: String): Result<Unit> {
         val normalizedEmail = email.trim().lowercase(Locale.ROOT)
@@ -105,6 +106,10 @@ class DefaultAuthRepository @Inject constructor(
 
     override suspend fun logout() {
         sessionManager.clear()
+    }
+
+    override suspend fun setMfaEnrollment(enrolled: Boolean) {
+        sessionManager.setMfaEnrolled(enrolled)
     }
 
     companion object {
