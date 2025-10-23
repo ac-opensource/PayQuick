@@ -1,11 +1,12 @@
 package com.payquick.domain.usecase
 
+import java.math.BigDecimal
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 
 class SubmitMockTransferUseCase @Inject constructor() {
-    suspend operator fun invoke(amount: Double, recipient: String, note: String?): Result<Unit> {
-        if (amount <= 0.0) {
+    suspend operator fun invoke(amount: BigDecimal, recipient: String, note: String?): Result<Unit> {
+        if (amount <= BigDecimal.ZERO) {
             return Result.failure(IllegalArgumentException("Amount must be positive"))
         }
         if (recipient.isBlank()) {

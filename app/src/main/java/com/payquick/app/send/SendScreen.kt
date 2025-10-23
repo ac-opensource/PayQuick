@@ -1,5 +1,7 @@
 package com.payquick.app.send
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
@@ -36,12 +39,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.payquick.R
 import com.payquick.app.common.SwipeToSend
+import com.payquick.app.common.rememberBackNavigationAction
 import com.payquick.app.common.TopBar
 import java.time.format.DateTimeFormatter
 
@@ -53,6 +59,11 @@ fun SendScreen(
     viewModel: SendViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val backAction = rememberBackNavigationAction(onNavigateHome)
+
+    BackHandler(enabled = backAction.isEnabled) {
+        backAction.onBack()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -60,7 +71,7 @@ fun SendScreen(
                 is SendEvent.ShowMessage -> onShowSnackbar(event.message)
                 SendEvent.TransferCompleted -> {
                     onShowSnackbar("Transfer scheduled")
-                    onNavigateHome()
+                    backAction.onBack()
                 }
             }
         }
@@ -71,7 +82,8 @@ fun SendScreen(
         onDigitClick = viewModel::onDigitClick,
         onBackspaceClick = viewModel::onBackspaceClick,
         onDoneClick = viewModel::onSubmit,
-        onNavigateBack = onNavigateHome,
+        onNavigateBack = backAction.onBack,
+        isBackEnabled = backAction.isEnabled,
         onRecipientChange = viewModel::onRecipientChange,
         onCurrencyChange = viewModel::onCurrencyChange,
         modifier = modifier
@@ -85,6 +97,7 @@ private fun SendContent(
     onBackspaceClick: () -> Unit,
     onDoneClick: () -> Unit,
     onNavigateBack: () -> Unit,
+    isBackEnabled: Boolean,
     onRecipientChange: () -> Unit,
     onCurrencyChange: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -95,7 +108,12 @@ private fun SendContent(
             .background(MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp))
             .padding(PaddingValues(horizontal = 20.dp)),
     ) {
-        TopBar(onNavigateBack = onNavigateBack,"Send Money")
+        TopBar(
+            "Send Money",
+            leftIcon = Icons.Rounded.ArrowBack,
+            onLeftIconClick = onNavigateBack,
+            leftIconEnabled = isBackEnabled
+        )
         Spacer(modifier = Modifier.height(24.dp))
         RecipientHeader(
             recipient = state.selectedRecipient,
@@ -132,11 +150,12 @@ private fun RecipientHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Box(
+        Image(
+            painter = painterResource(id = R.drawable.ic_default_user),
+            contentDescription = "Recipient avatar",
             modifier = Modifier
                 .size(48.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.tertiaryContainer)
         )
         Column {
             Text(

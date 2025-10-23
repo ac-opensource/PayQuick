@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.payquick.domain.usecase.SubmitMockTransferUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.math.BigDecimal
 import java.util.Currency
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -63,8 +64,8 @@ class SendViewModel @Inject constructor(
             return
         }
 
-        val amount = current.amount.toDoubleOrNull()
-        if (amount == null || amount <= 0.0) {
+        val amount = current.amount.toBigDecimalOrNull()
+        if (amount == null || amount <= BigDecimal.ZERO) {
             _state.update { it.copy(errorMessage = "Enter a valid amount") }
             return
         }

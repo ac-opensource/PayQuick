@@ -1,5 +1,6 @@
 package com.payquick.app.send
 
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.Currency
 
@@ -21,7 +22,7 @@ data class SendUiState(
         Currency.getInstance("GBP"),
     )
 ) {
-    val isFormValid: Boolean get() = amount.toDoubleOrNull()?.let { it > 0.0 } == true
+    val isFormValid: Boolean get() = amount.toBigDecimalOrNull()?.let { it > BigDecimal.ZERO } == true
 }
 
 data class Recipient(

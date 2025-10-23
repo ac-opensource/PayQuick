@@ -1,282 +1,314 @@
 package com.payquick.app.transactions
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ExitToApp
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.payquick.app.common.SquigglyLoadingIndicator
+import com.payquick.app.common.TopBar
+import com.payquick.app.common.EmptyStateCard
+import com.payquick.app.common.RetryErrorCard
+import com.payquick.app.common.TransactionGroupHeader
+import com.payquick.app.common.TransactionListCard
+import com.payquick.app.common.TransactionListItemUi
+import com.payquick.app.common.rememberBackNavigationAction
+import com.payquick.app.navigation.TransactionDetails
 
 @Composable
 fun TransactionsScreen(
     onNavigateBack: () -> Unit,
+    onTransactionClick: (TransactionDetails) -> Unit,
     onShowSnackbar: suspend (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TransactionsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val backAction = rememberBackNavigationAction(onNavigateBack)
+
+    BackHandler(enabled = backAction.isEnabled) {
+        backAction.onBack()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is TransactionsEvent.ShowMessage -> onShowSnackbar(event.message)
-                TransactionsEvent.LoggedOut -> onNavigateBack()
+                TransactionsEvent.LoggedOut -> backAction.onBack()
             }
         }
     }
 
     TransactionsContent(
         state = state,
-        onNextPage = viewModel::onNextPage,
-        onPreviousPage = viewModel::onPreviousPage,
+        onNavigateBack = backAction.onBack,
+        isBackEnabled = backAction.isEnabled,
+        onTransactionClick = onTransactionClick,
+        onRefresh = viewModel::refresh,
+        onLoadMore = viewModel::loadMore,
+        onSearchQueryChange = viewModel::onSearchQueryChange,
+        onFilterChange = viewModel::onFilterChange,
         onRetry = viewModel::onRetry,
-        onLogout = viewModel::onLogout,
-        onNavigateBack = onNavigateBack,
         modifier = modifier
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun TransactionsContent(
     state: TransactionsUiState,
-    onNextPage: () -> Unit,
-    onPreviousPage: () -> Unit,
-    onRetry: () -> Unit,
-    onLogout: () -> Unit,
     onNavigateBack: () -> Unit,
+    isBackEnabled: Boolean,
+    onTransactionClick: (TransactionDetails) -> Unit,
+    onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onFilterChange: (TransactionListFilter) -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text("Transactions") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onLogout) {
-                        Icon(imageVector = Icons.Rounded.ExitToApp, contentDescription = "Log out")
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        when {
-            state.isInitialLoading -> LoadingContent(innerPadding)
-            state.errorMessage != null && state.groups.isEmpty() -> ErrorContent(
-                padding = innerPadding,
-                message = state.errorMessage,
-                onRetry = onRetry
-            )
-            else -> TransactionList(
-                state = state,
-                padding = innerPadding,
-                onNextPage = onNextPage,
-                onPreviousPage = onPreviousPage,
-                onRetry = onRetry
-            )
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    val listState = rememberLazyListState()
+    val reachedBottom by remember {
+        derivedStateOf {
+            val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: return@derivedStateOf false
+            lastVisibleIndex >= listState.layoutInfo.totalItemsCount - 1
         }
     }
-}
 
-@Composable
-private fun LoadingContent(padding: PaddingValues) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(padding),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun ErrorContent(
-    padding: PaddingValues,
-    message: String,
-    onRetry: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(text = message, style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onRetry) {
-            Text("Try again")
+    LaunchedEffect(reachedBottom) {
+        if (reachedBottom && !state.isLoading && !state.isFetchingMore && !state.endReached) {
+            onLoadMore()
         }
     }
-}
 
-@Composable
-private fun TransactionList(
-    state: TransactionsUiState,
-    padding: PaddingValues,
-    onNextPage: () -> Unit,
-    onPreviousPage: () -> Unit,
-    onRetry: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-    ) {
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
-        ) {
-            state.groups.forEach { group ->
-                item(key = group.monthLabel) {
-                    Text(
-                        text = group.monthLabel,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
-                }
-                items(group.items, key = { it.id }) { item ->
-                    TransactionCard(item)
-                }
-            }
-        }
-        PaginationBar(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            state = state,
-            onNextPage = onNextPage,
-            onPreviousPage = onPreviousPage,
-            onRetry = onRetry
+    Column(modifier = modifier.fillMaxSize()) {
+        TopBar(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            title = "Transactions",
+            leftIcon = Icons.AutoMirrored.Rounded.ArrowBack,
+            onLeftIconClick = onNavigateBack,
+            leftIconEnabled = isBackEnabled
         )
-    }
-}
 
-@Composable
-private fun TransactionCard(item: TransactionUiItem) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        PullToRefreshBox(
+            state = pullToRefreshState,
+            isRefreshing = state.isLoading,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize()
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(text = item.description, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        text = item.timestamp,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                item {
+                    TransactionSearchBar(
+                        query = state.searchQuery,
+                        onQueryChange = onSearchQueryChange
                     )
                 }
-                Text(
-                    text = item.amount,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (item.amount.startsWith("-")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
-                )
+                item {
+                    TransactionFilterRow(
+                        selected = state.filter,
+                        onFilterChange = onFilterChange
+                    )
+                }
+
+                if (state.isLoading && state.groups.isEmpty()) {
+                    // Handled by Pull-to-refresh indicator
+                } else if (state.errorMessage != null && state.groups.isEmpty()) {
+                    item {
+                        RetryErrorCard(
+                            message = state.errorMessage,
+                            onRetry = onRetry
+                        )
+                    }
+                } else if (state.groups.isEmpty()) {
+                    val emptyBody = if (state.searchQuery.isBlank()) {
+                        "As you send or receive money, your transactions will show up here."
+                    } else {
+                        "No results for \"${state.searchQuery}\". Try a different search."
+                    }
+                    item {
+                        EmptyStateCard(
+                            title = "No activity",
+                            body = emptyBody
+                        )
+                    }
+                } else {
+                    state.groups.forEach { group ->
+                        stickyHeader {
+                            TransactionGroupHeader(monthLabel = group.monthLabel)
+                        }
+                        items(group.items, key = { it.id }) { item ->
+                            TransactionListCard(
+                                item = item.toListItem(),
+                                onClick = {
+                                    onTransactionClick(
+                                        TransactionDetails(
+                                            id = item.id,
+                                            amountLabel = item.amountLabel,
+                                            isCredit = item.isCredit,
+                                            counterpartyLabel = item.counterpartyLabel,
+                                            statusLabel = item.statusLabel,
+                                            timestampLabel = item.subtitle,
+                                            currencyCode = item.currencyCode,
+                                            directionLabel = item.directionLabel
+                                        )
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (state.isFetchingMore) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            SquigglyLoadingIndicator()
+                        }
+                    }
+                }
+
+                if (state.endReached) {
+                    item {
+                        Text(
+                            text = "You've reached the end of your transactions.",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                state.errorMessage?.takeIf { state.groups.isNotEmpty() }?.let { message ->
+                    item { TransactionsInlineError(message = message, onRetry = onRetry) }
+                }
             }
-            Text(
-                text = item.status,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary
-            )
         }
     }
 }
 
 @Composable
-private fun PaginationBar(
-    modifier: Modifier,
-    state: TransactionsUiState,
-    onNextPage: () -> Unit,
-    onPreviousPage: () -> Unit,
-    onRetry: () -> Unit
+private fun TransactionSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit
 ) {
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onPreviousPage, enabled = state.canLoadPrevious) {
-                Text("Previous")
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text("Search transactions") },
+        leadingIcon = { Icon(imageVector = Icons.Rounded.Search, contentDescription = null) },
+        trailingIcon = {
+            if (query.isNotBlank()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(imageVector = Icons.Rounded.Close, contentDescription = "Clear search")
+                }
             }
-            Text("Page ${state.currentPage} of ${state.totalPages}")
-            TextButton(onClick = onNextPage, enabled = state.canLoadNext) {
-                Text("Next")
-            }
-        }
-        if (state.isPaginating) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .height(24.dp)
-                        .width(24.dp)
-                )
-            }
-        }
-        state.errorMessage?.takeIf { state.groups.isNotEmpty() }?.let { message ->
-            Text(
-                text = message,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp)
+        },
+        shape = CircleShape,
+        singleLine = true
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TransactionFilterRow(
+    selected: TransactionListFilter,
+    onFilterChange: (TransactionListFilter) -> Unit
+) {
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TransactionListFilter.values().forEach { filter ->
+            FilterChip(
+                selected = selected == filter,
+                onClick = { onFilterChange(filter) },
+                label = { Text(filter.name) }
             )
-            TextButton(onClick = onRetry, modifier = Modifier.align(Alignment.End)) {
-                Text("Retry")
-            }
+        }
+    }
+}
+
+private fun TransactionUiItem.toListItem(): TransactionListItemUi {
+    return TransactionListItemUi(
+        id = id,
+        title = title,
+        subtitle = subtitle,
+        amountLabel = amountLabel,
+        isCredit = isCredit
+    )
+}
+
+@Composable
+private fun TransactionsInlineError(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error
+        )
+        TextButton(onClick = onRetry) {
+            Text("Retry")
         }
     }
 }

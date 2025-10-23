@@ -9,6 +9,7 @@ import com.payquick.domain.repository.TransactionRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.datetime.Instant
+import java.math.BigDecimal
 
 @Singleton
 class DefaultTransactionRepository @Inject constructor(
@@ -34,7 +35,7 @@ class DefaultTransactionRepository @Inject constructor(
 
     private fun TransactionDto.toDomain(): Transaction = Transaction(
         id = id,
-        amountInCents = amountInCents,
+        amount = BigDecimal.valueOf(amountInCents.toLong(), 2),
         currency = currency,
         type = TransactionType.valueOf(type),
         status = status,

@@ -3,15 +3,18 @@ package com.payquick.data.auth
 import com.payquick.data.network.PayQuickApi
 import com.payquick.data.network.model.LoginRequest
 import com.payquick.data.network.model.LoginResponse
+import com.payquick.data.network.model.RefreshTokenRequest
 import com.payquick.data.session.SessionManager
 import com.payquick.domain.repository.AuthRepository
 import java.util.Locale
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
 class DefaultAuthRepository @Inject constructor(
     private val api: PayQuickApi,
+    @Named("refreshApi") private val refreshApi: PayQuickApi,
     private val sessionManager: SessionManager
 ) : AuthRepository {
 
@@ -41,6 +44,27 @@ class DefaultAuthRepository @Inject constructor(
             Result.failure(error)
         } catch (error: Throwable) {
             Result.failure(InvalidCredentialsException(cause = error))
+        }
+    }
+
+    override suspend fun refreshSession(): Result<Unit> {
+        val current = sessionManager.session.value
+            ?: return Result.failure(IllegalStateException("No session available"))
+
+        return try {
+            val response = refreshApi.refreshToken(
+                RefreshTokenRequest(refreshToken = current.refreshToken)
+            )
+
+            sessionManager.updateTokens(
+                accessToken = response.data.accessToken,
+                refreshToken = response.data.refreshToken,
+                expiresInSeconds = response.data.expiresIn
+            )
+
+            Result.success(Unit)
+        } catch (error: Throwable) {
+            Result.failure(error)
         }
     }
 

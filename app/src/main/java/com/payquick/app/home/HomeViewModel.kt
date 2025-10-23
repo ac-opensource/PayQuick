@@ -7,9 +7,13 @@ import com.payquick.domain.model.TransactionType
 import com.payquick.domain.usecase.FetchTransactionsPageUseCase
 import com.payquick.domain.usecase.ObserveSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.math.BigDecimal
 import java.text.NumberFormat
+import java.time.Month
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.format.FormatStyle
+import java.util.Currency
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -70,10 +74,12 @@ class HomeViewModel @Inject constructor(
             val result = fetchTransactionsPageUseCase(page = currentPage)
             result.onSuccess { page ->
                 val transactionUi = page.transactions.map { it.toUiModel() }
-                val balanceCents = page.transactions.sumOf { txn ->
-                    if (txn.type == TransactionType.TRANSFER) -txn.amountInCents else txn.amountInCents
+                val balanceAmount = page.transactions.fold(BigDecimal.ZERO) { acc, txn ->
+                    val signedAmount = if (txn.type == TransactionType.TRANSFER) txn.amount.negate() else txn.amount
+                    acc + signedAmount
                 }
-                val balanceLabel = currencyFormatter.format(balanceCents / 100.0)
+                val balanceCurrency = page.transactions.firstOrNull()?.currency ?: currencyFormatter.currency?.currencyCode ?: Currency.getInstance(Locale.getDefault()).currencyCode
+                val balanceLabel = formatCurrency(balanceAmount, balanceCurrency)
                 val refreshedLabel = timestampFormatter.format(Clock.System.now().toLocalDateTime(zone).toJavaLocalDateTime())
 
                 _state.update {
@@ -106,7 +112,7 @@ class HomeViewModel @Inject constructor(
                 } else {
                     val newTransactions = page.transactions.map { it.toUiModel() }
                     _state.update {
-                        val allTransactions = it.transactionGroups.flatMap { it.items } + newTransactions
+                    val allTransactions = it.transactionGroups.flatMap { it.items } + newTransactions
                         it.copy(
                             transactionGroups = allTransactions.toUiGroups(),
                             isFetchingMore = false
@@ -138,9 +144,9 @@ class HomeViewModel @Inject constructor(
 
     private fun Transaction.toUiModel(): HomeTransactionUi {
         val isCredit = type != TransactionType.TRANSFER
-        val signedAmount = amountInCents / 100.0 * if (isCredit) 1 else -1
-        val formattedAmount = currencyFormatter.format(kotlin.math.abs(signedAmount))
-        val amountLabel = if (isCredit) "+$formattedAmount" else "-$formattedAmount"
+        val signedAmount = if (isCredit) amount else amount.negate()
+        val formattedAmount = formatCurrency(signedAmount.abs(), currency)
+        val amountLabel = if (signedAmount.signum() >= 0) "+$formattedAmount" else "-$formattedAmount"
 
         val localDateTime = createdAt.toLocalDateTime(zone).toJavaLocalDateTime()
         val subtitle = timestampFormatter.format(localDateTime)
@@ -161,7 +167,8 @@ class HomeViewModel @Inject constructor(
             amountLabel = amountLabel,
             isCredit = isCredit,
             status = statusLabel,
-            dateTime = localDateTime
+            dateTime = localDateTime,
+            currencyCode = currency
         )
     }
 
@@ -171,25 +178,19 @@ class HomeViewModel @Inject constructor(
         }
 
         fun label(): String {
-            val monthName = monthNames.getOrElse(month - 1) { "Month" }
+            val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.getDefault())
             return "$monthName $year"
         }
     }
 
-    companion object {
-        private val monthNames = listOf(
-            "January",
-            "February",
-            "March",
-            "April",
-            "May",
-            "June",
-            "July",
-            "August",
-            "September",
-            "October",
-            "November",
-            "December"
-        )
+    private fun formatCurrency(amount: BigDecimal, currencyCode: String): String {
+        val fallbackCurrency = runCatching { Currency.getInstance(Locale.getDefault()) }
+            .getOrNull() ?: currencyFormatter.currency ?: Currency.getInstance("USD")
+        val targetCurrency = runCatching { Currency.getInstance(currencyCode) }
+            .getOrNull() ?: fallbackCurrency
+        if (currencyFormatter.currency != targetCurrency) {
+            currencyFormatter.currency = targetCurrency
+        }
+        return currencyFormatter.format(amount)
     }
 }

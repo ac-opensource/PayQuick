@@ -12,7 +12,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -22,20 +24,25 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.payquick.app.auth.LoginScreen
 import com.payquick.app.designsystem.PayQuickTheme
 import com.payquick.app.home.HomeScreen
 import com.payquick.app.navigation.Home
 import com.payquick.app.navigation.Login
 import com.payquick.app.navigation.PayQuickRoute
+import com.payquick.app.navigation.Splash
 import com.payquick.app.navigation.Receive
 import com.payquick.app.navigation.Send
+import com.payquick.app.navigation.TransactionDetails
 import com.payquick.app.navigation.Transactions
 import com.payquick.app.receive.ReceiveScreen
 import com.payquick.app.send.SendScreen
 import com.payquick.app.session.SessionEvent
 import com.payquick.app.session.SessionViewModel
+import com.payquick.app.transactions.details.TransactionDetailsScreen
 import com.payquick.app.transactions.TransactionsScreen
+import com.payquick.app.splash.SplashScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,9 +52,11 @@ fun PayQuickApp() {
         val sessionState by sessionViewModel.state.collectAsStateWithLifecycle()
         val navController = rememberNavController()
         val snackbarHostState = remember { SnackbarHostState() }
+        val hasCompletedSplash = rememberSaveable { mutableStateOf(false) }
 
-        LaunchedEffect(sessionState.session) {
+        LaunchedEffect(sessionState.session, hasCompletedSplash.value) {
             if (sessionState.isLoading) return@LaunchedEffect
+            if (!hasCompletedSplash.value) return@LaunchedEffect
             val target = if (sessionState.session == null) Login else Home
             val targetRoute = target::class.qualifiedName ?: target::class.simpleName
             if (navController.currentDestination?.route == targetRoute) return@LaunchedEffect
@@ -84,7 +93,14 @@ fun PayQuickApp() {
                 onShowSnackbar = { message -> snackbarHostState.showSnackbar(message) },
                 onLogout = { sessionViewModel.logout() },
                 navController = navController,
-                startDestination = if (sessionState.session == null) Login else Home
+                onSplashFinished = { route ->
+                    hasCompletedSplash.value = true
+                    navController.navigate(route) {
+                        popUpTo(Splash) { inclusive = true }
+                        launchSingleTop = true
+                        restoreState = route != Login
+                    }
+                }
             )
         }
     }
@@ -97,19 +113,25 @@ private fun PayQuickNavHost(
     onShowSnackbar: suspend (String) -> Unit,
     onLogout: () -> Unit,
     navController: NavHostController,
-    startDestination: PayQuickRoute
+    onSplashFinished: (PayQuickRoute) -> Unit
 ) {
     NavHost(
         navController = navController,
-        startDestination = startDestination,
+        startDestination = Splash,
         modifier = Modifier.padding(padding)
     ) {
+        composable<Splash> {
+            SplashScreen(
+                onNavigate = onSplashFinished
+            )
+        }
         composable<Login> {
             LoginScreen(
                 onLoginSuccess = {
                     navController.navigate(Home) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             inclusive = true
+                            saveState = true
                         }
                         launchSingleTop = true
                         restoreState = true
@@ -123,6 +145,7 @@ private fun PayQuickNavHost(
                 onSendMoney = { navController.navigate(Send) },
                 onRequestMoney = { navController.navigate(Receive) },
                 onViewAllActivity = { navController.navigate(Transactions) },
+                onTransactionClick = { navController.navigate(it) },
                 onLogout = { onLogout() },
                 onShowSnackbar = onShowSnackbar
             )
@@ -151,8 +174,16 @@ private fun PayQuickNavHost(
         }
         composable<Transactions> {
             TransactionsScreen(
+                onTransactionClick = { navController.navigate(it) },
                 onNavigateBack = { navController.popBackStack() },
                 onShowSnackbar = onShowSnackbar
+            )
+        }
+        composable<TransactionDetails> {
+            val details = it.toRoute<TransactionDetails>()
+            TransactionDetailsScreen(
+                details = details,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

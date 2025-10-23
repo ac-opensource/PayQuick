@@ -3,7 +3,9 @@ package com.payquick.app.home
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,10 +21,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.ExitToApp
 import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -32,7 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
@@ -45,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -53,13 +52,20 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.payquick.R
-import com.payquick.app.common.DotLoadingIndicator
+import com.payquick.app.common.SquigglyLoadingIndicator
+import com.payquick.app.common.TransactionGroupHeader
+import com.payquick.app.common.TransactionListCard
+import com.payquick.app.common.TransactionListItemUi
+import com.payquick.app.common.EmptyStateCard
+import com.payquick.app.common.RetryErrorCard
+import com.payquick.app.navigation.TransactionDetails
 
 @Composable
 fun HomeScreen(
     onSendMoney: () -> Unit,
     onRequestMoney: () -> Unit,
     onViewAllActivity: () -> Unit,
+    onTransactionClick: (TransactionDetails) -> Unit,
     onLogout: () -> Unit,
     onShowSnackbar: suspend (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -82,6 +88,7 @@ fun HomeScreen(
         onSendMoney = onSendMoney,
         onRequestMoney = onRequestMoney,
         onViewAllActivity = onViewAllActivity,
+        onTransactionClick = onTransactionClick,
         onLogout = onLogout,
         modifier = modifier
     )
@@ -96,22 +103,11 @@ private fun HomeContent(
     onSendMoney: () -> Unit,
     onRequestMoney: () -> Unit,
     onViewAllActivity: () -> Unit,
+    onTransactionClick: (TransactionDetails) -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
-    if (pullToRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
-            onRefresh()
-        }
-    }
-
-    if (state.isLoading) {
-        pullToRefreshState.startRefresh()
-    } else {
-        pullToRefreshState.endRefresh()
-    }
-
     val lazyListState = rememberLazyListState()
     val isScrolledToEnd by remember {
         derivedStateOf {
@@ -126,86 +122,117 @@ private fun HomeContent(
         }
     }
 
-    Box(modifier = modifier.nestedScroll(pullToRefreshState.nestedScrollConnection)) {
-        HomeTopBar(userName = state.headline, onLogout = onLogout)
+    PullToRefreshBox(
+        state = pullToRefreshState,
+        isRefreshing = state.isLoading,
+        onRefresh = onRefresh,
+        modifier = modifier
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            HomeTopBar(userName = state.headline, onLogout = onLogout)
 
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 54.dp)
-                .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)),
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            item {
-                BalanceCard(state = state)
-            }
-            item {
-                QuickActionsRow(
-                    onSendMoney = onSendMoney,
-                    onRequestMoney = onRequestMoney
-                )
-            }
-            item {
-                SectionHeader(title = "Transactions")
-            }
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 54.dp)
+                    .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)),
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    BalanceCard(state = state)
+                }
+                item {
+                    QuickActionsRow(
+                        onSendMoney = onSendMoney,
+                        onRequestMoney = onRequestMoney
+                    )
+                }
+                item {
+                    SectionHeader(
+                        title = "Transactions",
+                        trailingContent = {
+                            TextButton(onClick = onViewAllActivity) {
+                                Text("View all")
+                            }
+                        }
+                    )
+                }
             if (state.errorMessage != null && state.transactionGroups.isEmpty()) {
                 item {
-                    ErrorCard(message = state.errorMessage, onRetry = onRefresh)
+                    RetryErrorCard(
+                        message = state.errorMessage,
+                        onRetry = onRefresh
+                    )
                 }
             } else if (state.transactionGroups.isEmpty() && !state.isLoading) {
-                item { EmptyTransactionsCard() }
+                item {
+                    EmptyStateCard(
+                        title = "No activity yet",
+                        body = "When you start sending or receiving money you'll see the latest movement here."
+                    )
+                }
             } else {
                 state.transactionGroups.forEach { group ->
                     stickyHeader {
-                        Text(
-                            text = group.monthLabel,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp))
-                                .padding(vertical = 8.dp)
-                        )
+                        TransactionGroupHeader(monthLabel = group.monthLabel)
                     }
                     items(group.items, key = { it.id }) { transaction ->
-                        TransactionCard(transaction)
+                        TransactionListCard(
+                            item = transaction.toListItem(),
+                            onClick = {
+                                val direction = if (transaction.isCredit) {
+                                    "Received from ${transaction.title}"
+                                } else {
+                                    "Sent to ${transaction.title}"
+                                }
+                                onTransactionClick(
+                                    TransactionDetails(
+                                        id = transaction.id,
+                                        amountLabel = transaction.amountLabel,
+                                        isCredit = transaction.isCredit,
+                                        counterpartyLabel = transaction.title,
+                                        statusLabel = transaction.status,
+                                        timestampLabel = transaction.subtitle,
+                                        currencyCode = transaction.currencyCode,
+                                        directionLabel = direction
+                                    )
+                                )
+                            }
+                        )
                     }
                 }
             }
 
-            if (state.isFetchingMore) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        DotLoadingIndicator()
+                if (state.isFetchingMore) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            SquigglyLoadingIndicator()
+                        }
                     }
                 }
-            }
 
-            if (state.endReached) {
-                item {
-                    Text(
-                        text = "You've reached the end of your transactions.",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                if (state.endReached) {
+                    item {
+                        Text(
+                            text = "You've reached the end of your transactions.",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
-        PullToRefreshContainer(
-            state = pullToRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter)
-        )
     }
 }
 
@@ -322,7 +349,9 @@ private fun SectionHeader(
     trailingContent: (@Composable () -> Unit)? = null
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -335,121 +364,14 @@ private fun SectionHeader(
     }
 }
 
-@Composable
-private fun ErrorCard(
-    message: String,
-    onRetry: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "We hit a snag",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.9f)
-            )
-            TextButton(
-                onClick = onRetry,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onErrorContainer)
-            ) {
-                Text("Try again")
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyTransactionsCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "No activity yet",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = "When you start sending or receiving money you'll see the latest movement here.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun TransactionCard(transaction: HomeTransactionUi) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(20.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.tertiaryContainer)
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = transaction.title,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = transaction.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = transaction.amountLabel,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (transaction.isCredit) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
-                )
-                Icon(
-                    imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
+private fun HomeTransactionUi.toListItem(): TransactionListItemUi {
+    return TransactionListItemUi(
+        id = id,
+        title = title,
+        subtitle = subtitle,
+        amountLabel = amountLabel,
+        isCredit = isCredit
+    )
 }
 
 @Composable
@@ -457,19 +379,20 @@ private fun HomeTopBar(userName: String, onLogout: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)),
+            .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp))
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(
+            Image(
+                painter = painterResource(id = R.drawable.ic_default_user),
+                contentDescription = "Account avatar",
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.tertiaryContainer)
             )
             Text(
                 text = userName,
@@ -480,7 +403,7 @@ private fun HomeTopBar(userName: String, onLogout: () -> Unit) {
 
         Spacer(Modifier.weight(1f))
 
-        IconButton(onClick = {  }) {
+        IconButton(onClick = { }) {
             Icon(
                 imageVector = Icons.Rounded.Notifications,
                 contentDescription = "Notifications"

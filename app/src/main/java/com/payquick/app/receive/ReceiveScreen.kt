@@ -1,5 +1,6 @@
 package com.payquick.app.receive
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.Share
@@ -37,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.payquick.app.common.TopBar
+import com.payquick.app.common.rememberBackNavigationAction
 
 @Composable
 fun ReceiveScreen(
@@ -46,6 +49,11 @@ fun ReceiveScreen(
     viewModel: ReceiveViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val backAction = rememberBackNavigationAction(onNavigateHome)
+
+    BackHandler(enabled = backAction.isEnabled) {
+        backAction.onBack()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -60,7 +68,8 @@ fun ReceiveScreen(
         onGenerateNewCode = viewModel::refreshCode,
         onCopyLink = viewModel::copyLink,
         onShareLink = viewModel::shareLink,
-        onNavigateBack = onNavigateHome,
+        onNavigateBack = backAction.onBack,
+        isBackEnabled = backAction.isEnabled,
         modifier = modifier
     )
 }
@@ -72,6 +81,7 @@ private fun ReceiveContent(
     onCopyLink: () -> Unit,
     onShareLink: () -> Unit,
     onNavigateBack: () -> Unit,
+    isBackEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -81,7 +91,12 @@ private fun ReceiveContent(
             .padding(PaddingValues(horizontal = 20.dp)),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        TopBar(onNavigateBack = onNavigateBack, "Receive money")
+        TopBar(
+            "Receive money",
+            leftIcon = Icons.Rounded.ArrowBack,
+            onLeftIconClick = onNavigateBack,
+            leftIconEnabled = isBackEnabled
+        )
         Text(
             text = "Share your secure code or payment link so the sender knows exactly where to route the funds.",
             style = MaterialTheme.typography.bodyMedium,

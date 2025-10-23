@@ -26,5 +26,6 @@ data class HomeTransactionUi(
     val amountLabel: String,
     val isCredit: Boolean,
     val status: String,
-    val dateTime: LocalDateTime
+    val dateTime: LocalDateTime,
+    val currencyCode: String
 )
