@@ -1,0 +1,26 @@
+# Gradle and build outputs
+.gradle/
+/build/
+**/build/
+!.gradle/wrapper/gradle-wrapper.jar
+
+# Android/IDE files
+/local.properties
+/.idea/
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Kotlin/Java tooling caches
+/.kotlin/
+
+# Generated files
+app/release/
+
+# Node environment
+fe_challenge_api/node_modules/
+node_modules/
+
+# Misc
+*.iml

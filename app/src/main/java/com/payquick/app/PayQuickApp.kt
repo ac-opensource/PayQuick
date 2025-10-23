@@ -1,0 +1,159 @@
+package com.payquick.app
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.payquick.app.auth.LoginScreen
+import com.payquick.app.designsystem.PayQuickTheme
+import com.payquick.app.home.HomeScreen
+import com.payquick.app.navigation.Home
+import com.payquick.app.navigation.Login
+import com.payquick.app.navigation.PayQuickRoute
+import com.payquick.app.navigation.Receive
+import com.payquick.app.navigation.Send
+import com.payquick.app.navigation.Transactions
+import com.payquick.app.receive.ReceiveScreen
+import com.payquick.app.send.SendScreen
+import com.payquick.app.session.SessionEvent
+import com.payquick.app.session.SessionViewModel
+import com.payquick.app.transactions.TransactionsScreen
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PayQuickApp() {
+    PayQuickTheme {
+        val sessionViewModel: SessionViewModel = hiltViewModel()
+        val sessionState by sessionViewModel.state.collectAsStateWithLifecycle()
+        val navController = rememberNavController()
+        val snackbarHostState = remember { SnackbarHostState() }
+
+        LaunchedEffect(sessionState.session) {
+            if (sessionState.isLoading) return@LaunchedEffect
+            val target = if (sessionState.session == null) Login else Home
+            val targetRoute = target::class.qualifiedName ?: target::class.simpleName
+            if (navController.currentDestination?.route == targetRoute) return@LaunchedEffect
+            navController.navigate(target) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    inclusive = true
+                    saveState = target != Login
+                }
+                launchSingleTop = true
+                restoreState = target != Login
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            sessionViewModel.events.collect { event ->
+                when (event) {
+                    is SessionEvent.Error -> snackbarHostState.showSnackbar(event.message)
+                }
+            }
+        }
+
+        if (sessionState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            return@PayQuickTheme
+        }
+
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+        ) { innerPadding ->
+            PayQuickNavHost(
+                padding = innerPadding,
+                onShowSnackbar = { message -> snackbarHostState.showSnackbar(message) },
+                onLogout = { sessionViewModel.logout() },
+                navController = navController,
+                startDestination = if (sessionState.session == null) Login else Home
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun PayQuickNavHost(
+    padding: PaddingValues,
+    onShowSnackbar: suspend (String) -> Unit,
+    onLogout: () -> Unit,
+    navController: NavHostController,
+    startDestination: PayQuickRoute
+) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination,
+        modifier = Modifier.padding(padding)
+    ) {
+        composable<Login> {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Home) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onShowSnackbar = onShowSnackbar
+            )
+        }
+        composable<Home> {
+            HomeScreen(
+                onSendMoney = { navController.navigate(Send) },
+                onRequestMoney = { navController.navigate(Receive) },
+                onViewAllActivity = { navController.navigate(Transactions) },
+                onLogout = { onLogout() },
+                onShowSnackbar = onShowSnackbar
+            )
+        }
+        composable<Send> {
+            SendScreen(
+                onNavigateHome = {
+                    navController.navigate(Home) {
+                        popUpTo(Home) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onShowSnackbar = onShowSnackbar
+            )
+        }
+        composable<Receive> {
+            ReceiveScreen(
+                onNavigateHome = {
+                    navController.navigate(Home) {
+                        popUpTo(Home) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onShowSnackbar = onShowSnackbar
+            )
+        }
+        composable<Transactions> {
+            TransactionsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onShowSnackbar = onShowSnackbar
+            )
+        }
+    }
+}
