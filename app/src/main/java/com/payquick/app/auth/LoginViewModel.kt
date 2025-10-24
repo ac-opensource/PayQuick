@@ -1,6 +1,6 @@
 package com.payquick.app.auth
 
-import android.util.Patterns
+import androidx.core.util.PatternsCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.payquick.R
@@ -69,7 +69,7 @@ class LoginViewModel @Inject constructor(
                 }
                 return
             }
-            !Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches() -> {
+            !PatternsCompat.EMAIL_ADDRESS.matcher(trimmedEmail).matches() -> {
                 _state.update {
                     it.copy(
                         emailErrorResId = R.string.login_error_invalid_email,
