@@ -39,10 +39,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.payquick.R
+import com.payquick.app.designsystem.PayQuickTheme
 
 @Immutable
 data class TransactionListItemUi(
@@ -62,6 +64,7 @@ fun TransactionGroupHeader(
         text = monthLabel,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp))
@@ -257,4 +260,50 @@ private fun Modifier.shimmerPlaceholder(
     return this
         .clip(shape)
         .background(brush)
+}
+
+private val PreviewTransaction = TransactionListItemUi(
+    id = "txn-preview",
+    title = "Jamie Rivera",
+    subtitle = "Oct 12 · 4:35 PM",
+    amountLabel = "+$125.00",
+    isCredit = true
+)
+
+@Preview(showBackground = true, name = "Transaction Card - Credit")
+@Composable
+private fun TransactionListCardPreviewCredit() {
+    PayQuickTheme {
+        TransactionListCard(
+            item = PreviewTransaction,
+            onClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Transaction Card - Debit")
+@Composable
+private fun TransactionListCardPreviewDebit() {
+    PayQuickTheme {
+        TransactionListCard(
+            item = PreviewTransaction.copy(isCredit = false, amountLabel = "-$42.18"),
+            onClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Transaction Header")
+@Composable
+private fun TransactionGroupHeaderPreview() {
+    PayQuickTheme {
+        TransactionGroupHeader(monthLabel = "September 2024")
+    }
+}
+
+@Preview(showBackground = true, name = "Transaction Card Skeleton")
+@Composable
+private fun TransactionCardSkeletonPreview() {
+    PayQuickTheme {
+        TransactionCardSkeleton()
+    }
 }

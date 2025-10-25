@@ -18,12 +18,13 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.math.BigDecimal
+import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TransactionsViewModelTest {
@@ -61,6 +62,7 @@ class TransactionsViewModelTest {
         viewModel.viewModelScope.cancel()
     }
 
+    @OptIn(ExperimentalTime::class)
     private class FakeTransactionRepository(private val success: Boolean) : TransactionRepository {
         override suspend fun fetchTransactions(page: Int): Result<TransactionPage> {
             return if (success) {

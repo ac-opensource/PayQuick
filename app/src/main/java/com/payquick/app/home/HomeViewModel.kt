@@ -8,6 +8,9 @@ import com.payquick.domain.model.Transaction
 import com.payquick.domain.model.TransactionType
 import com.payquick.domain.usecase.FetchTransactionsPageUseCase
 import com.payquick.domain.usecase.ObserveSessionUseCase
+import com.payquick.domain.time.TimeZone
+import com.payquick.domain.time.toJavaLocalDateTime
+import com.payquick.domain.time.toLocalDateTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.math.BigDecimal
@@ -29,11 +32,10 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toJavaLocalDateTime
-import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     observeSessionUseCase: ObserveSessionUseCase,

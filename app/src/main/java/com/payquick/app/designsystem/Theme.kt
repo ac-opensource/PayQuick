@@ -5,8 +5,10 @@ import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 
 private val LightColors = lightColorScheme(
     primary = Primary,
@@ -70,4 +72,12 @@ fun PayQuickTheme(
         shapes = PayQuickShapes,
         content = content
     )
+}
+
+@Preview(showBackground = true, name = "PayQuick Theme")
+@Composable
+private fun PayQuickThemePreview() {
+    PayQuickTheme {
+        Text(text = "PayQuick")
+    }
 }

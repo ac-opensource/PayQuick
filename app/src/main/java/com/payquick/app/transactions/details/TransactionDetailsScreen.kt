@@ -30,10 +30,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.payquick.R
 import com.payquick.app.common.TopBar
 import com.payquick.app.common.rememberBackNavigationAction
+import com.payquick.app.designsystem.PayQuickTheme
 import com.payquick.app.navigation.TransactionDetails
 
 @Composable
@@ -166,6 +168,39 @@ private fun TransactionDetailRow(label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+private val PreviewTransactionDetails = TransactionDetails(
+    id = "TXN-842914",
+    amountLabel = "+$240.00",
+    isCredit = true,
+    counterpartyLabel = "Jamie Rivera",
+    statusLabel = "Completed",
+    timestampLabel = "Oct 4, 2024 · 10:24 AM",
+    currencyCode = "USD",
+    directionLabel = "Received from Jamie Rivera"
+)
+
+@Preview(showBackground = true, name = "Transaction Details - Light")
+@Composable
+private fun TransactionDetailsScreenPreview() {
+    PayQuickTheme {
+        TransactionDetailsScreen(
+            details = PreviewTransactionDetails,
+            onNavigateBack = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Transaction Details - Dark")
+@Composable
+private fun TransactionDetailsScreenPreviewDark() {
+    PayQuickTheme(darkTheme = true) {
+        TransactionDetailsScreen(
+            details = PreviewTransactionDetails.copy(isCredit = false, amountLabel = "-$42.50"),
+            onNavigateBack = {}
         )
     }
 }

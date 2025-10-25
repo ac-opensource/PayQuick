@@ -7,8 +7,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.payquick.app.designsystem.PayQuickTheme
 import com.payquick.app.navigation.PayQuickRoute
 
 @Composable
@@ -26,10 +28,23 @@ fun SplashScreen(
         }
     }
 
+    SplashLoading(modifier = modifier)
+}
+
+@Composable
+private fun SplashLoading(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator()
+    }
+}
+
+@Preview(showBackground = true, name = "Splash")
+@Composable
+private fun SplashScreenPreview() {
+    PayQuickTheme {
+        SplashLoading()
     }
 }

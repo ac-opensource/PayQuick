@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.payquick.R
@@ -60,6 +61,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.payquick.app.designsystem.PayQuickTheme
 
 data class MfaEnrollUiState(
     val secret: String,
@@ -114,6 +116,82 @@ class MfaEnrollViewModel @Inject constructor(
                 append(alphabet.random())
             }
         }
+    }
+}
+
+@Preview(showBackground = true, name = "OTP Input")
+@Composable
+private fun OtpCodeInputPreview() {
+    PayQuickTheme {
+        OtpCodeInput(
+            value = "123",
+            onValueChange = {},
+            enabled = true
+        )
+    }
+}
+
+private val PreviewMfaEnrollState = MfaEnrollUiState(
+    secret = "ABCDEF1234567890",
+    code = "123456",
+    setupComplete = false,
+    isLoading = false
+)
+
+@Preview(showBackground = true, name = "MFA Enroll")
+@Composable
+private fun MfaEnrollContentPreview() {
+    PayQuickTheme {
+        MfaEnrollContent(
+            state = PreviewMfaEnrollState,
+            onCodeChanged = {},
+            onConfirm = {},
+            onContinue = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "MFA Enroll Completed")
+@Composable
+private fun MfaEnrollContentCompletePreview() {
+    PayQuickTheme {
+        MfaEnrollContent(
+            state = PreviewMfaEnrollState.copy(setupComplete = true),
+            onCodeChanged = {},
+            onConfirm = {},
+            onContinue = {}
+        )
+    }
+}
+
+private val PreviewMfaVerifyState = MfaVerifyUiState(
+    code = "654321",
+    verified = true
+)
+
+@Preview(showBackground = true, name = "MFA Verify")
+@Composable
+private fun MfaVerifyContentPreview() {
+    PayQuickTheme {
+        MfaVerifyContent(
+            state = PreviewMfaVerifyState.copy(verified = false),
+            onCodeChanged = {},
+            onConfirm = {},
+            onContinue = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "MFA Verify Completed")
+@Composable
+private fun MfaVerifyContentCompletePreview() {
+    PayQuickTheme {
+        MfaVerifyContent(
+            state = PreviewMfaVerifyState,
+            onCodeChanged = {},
+            onConfirm = {},
+            onContinue = {}
+        )
     }
 }
 

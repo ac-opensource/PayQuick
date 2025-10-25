@@ -1,11 +1,12 @@
 package com.payquick.domain.model
 
 import java.math.BigDecimal
-import kotlinx.datetime.Instant
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 enum class TransactionType { TRANSFER, TOPUP }
 
-data class Transaction(
+data class Transaction @OptIn(ExperimentalTime::class) constructor(
     val id: String,
     val amount: BigDecimal,
     val currency: String,

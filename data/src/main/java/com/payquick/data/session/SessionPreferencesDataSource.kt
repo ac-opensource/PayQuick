@@ -11,9 +11,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 @Singleton
+@OptIn(ExperimentalTime::class)
 class SessionPreferencesDataSource @Inject constructor(
     private val sharedPreferences: SharedPreferences
 ) {

@@ -29,7 +29,9 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -45,12 +47,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.payquick.R
@@ -61,7 +64,10 @@ import com.payquick.app.common.TransactionGroupHeader
 import com.payquick.app.common.TransactionListCard
 import com.payquick.app.common.TransactionListItemUi
 import com.payquick.app.common.transactionListSkeleton
+import com.payquick.app.designsystem.PayQuickTheme
 import com.payquick.app.navigation.TransactionDetails
+import java.time.LocalDateTime
+import java.time.Month
 
 @Composable
 fun HomeScreen(
@@ -342,7 +348,8 @@ private fun QuickActionButton(
         modifier = modifier,
         onClick = onClick,
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp)
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp),
+            contentColor = MaterialTheme.colorScheme.onSurface
         )
     ) {
         Column(
@@ -373,7 +380,8 @@ private fun SectionHeader(
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
         trailingContent?.invoke()
     }
@@ -391,45 +399,169 @@ private fun HomeTransactionUi.toListItem(): TransactionListItemUi {
 
 @Composable
 private fun HomeTopBar(userName: String, onLogout: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp))
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        tonalElevation = 2.dp
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_default_user),
-                contentDescription = stringResource(R.string.home_avatar_cd),
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-            )
-            Text(
-                text = userName,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_default_user),
+                    contentDescription = stringResource(R.string.home_avatar_cd),
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                )
+                Text(
+                    text = userName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
 
-        Spacer(Modifier.weight(1f))
+            Spacer(Modifier.weight(1f))
 
-        IconButton(onClick = { }) {
-            Icon(
-                imageVector = Icons.Rounded.Notifications,
-                contentDescription = stringResource(R.string.home_notifications_cd)
-            )
-        }
+            IconButton(
+                onClick = { },
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Notifications,
+                    contentDescription = stringResource(R.string.home_notifications_cd),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
 
-        IconButton(onClick = onLogout) {
-            Icon(
-                imageVector = Icons.Rounded.ExitToApp,
-                contentDescription = stringResource(R.string.home_log_out_cd)
-            )
+            IconButton(
+                onClick = onLogout,
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ExitToApp,
+                    contentDescription = stringResource(R.string.home_log_out_cd),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
+    }
+}
+
+@Preview(showBackground = true, name = "Balance Card")
+@Composable
+private fun BalanceCardPreview() {
+    PayQuickTheme {
+        BalanceCard(
+            state = PreviewHomeStateLight
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Quick Actions")
+@Composable
+private fun QuickActionsRowPreview() {
+    PayQuickTheme {
+        QuickActionsRow(onSendMoney = {}, onRequestMoney = {})
+    }
+}
+
+@Preview(showBackground = true, name = "Section Header")
+@Composable
+private fun SectionHeaderPreview() {
+    PayQuickTheme {
+        SectionHeader(title = "Recent activity") {
+            Text(text = "View all", color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Home Top Bar")
+@Composable
+private fun HomeTopBarPreview() {
+    PayQuickTheme {
+        HomeTopBar(userName = "Jamie Rivera", onLogout = {})
+    }
+}
+
+private val PreviewHomeTransactions = listOf(
+    HomeTransactionGroup(
+        monthLabel = "October 2024",
+        items = listOf(
+            HomeTransactionUi(
+                id = "txn-1",
+                title = "Groceries",
+                subtitle = "Oct 4 · 6:42 PM",
+                amountLabel = "-$54.12",
+                isCredit = false,
+                status = "Completed",
+                dateTime = LocalDateTime.of(2024, Month.OCTOBER, 4, 18, 42),
+                currencyCode = "USD"
+            ),
+            HomeTransactionUi(
+                id = "txn-2",
+                title = "Salary",
+                subtitle = "Oct 1 · 9:00 AM",
+                amountLabel = "+$2,800.00",
+                isCredit = true,
+                status = "Completed",
+                dateTime = LocalDateTime.of(2024, Month.OCTOBER, 1, 9, 0),
+                currencyCode = "USD"
+            )
+        )
+    )
+)
+
+private val PreviewHomeStateLight = HomeUiState(
+    isLoading = false,
+    headline = "Welcome back, Jamie",
+    subHeadline = "Here's the latest",
+    balance = "$3,482.15",
+    lastRefreshedLabel = "Updated moments ago",
+    transactionGroups = PreviewHomeTransactions
+)
+
+@Preview(showBackground = true, name = "Home - Light")
+@Composable
+private fun HomeContentPreviewLight() {
+    PayQuickTheme {
+        HomeContent(
+            state = PreviewHomeStateLight,
+            onRefresh = {},
+            onLoadMore = {},
+            onSendMoney = {},
+            onRequestMoney = {},
+            onViewAllActivity = {},
+            onTransactionClick = {},
+            onLogout = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Home - Dark")
+@Composable
+private fun HomeContentPreviewDark() {
+    PayQuickTheme(darkTheme = true) {
+        HomeContent(
+            state = PreviewHomeStateLight.copy(isFetchingMore = true),
+            onRefresh = {},
+            onLoadMore = {},
+            onSendMoney = {},
+            onRequestMoney = {},
+            onViewAllActivity = {},
+            onTransactionClick = {},
+            onLogout = {}
+        )
     }
 }

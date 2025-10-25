@@ -58,9 +58,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.annotation.DrawableRes
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.payquick.R
+import com.payquick.app.designsystem.PayQuickTheme
 
 @Composable
 fun LoginScreen(
@@ -111,7 +113,7 @@ private fun LoginContent(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFFDFDFD))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -136,7 +138,7 @@ private fun LoginContent(
                 shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp),
                 tonalElevation = 8.dp,
                 shadowElevation = 8.dp,
-                color = Color.White
+                color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
                     modifier = Modifier
@@ -381,5 +383,39 @@ private fun OnboardingCarousel(
                 )
             }
         }
+    }
+}
+
+private val PreviewLoginState = LoginUiState(
+    email = "jamie@example.com",
+    password = "••••••••",
+    rememberMe = true
+)
+
+@Preview(showBackground = true, name = "Login - Light")
+@Composable
+private fun LoginContentPreviewLight() {
+    PayQuickTheme {
+        LoginContent(
+            state = PreviewLoginState,
+            onEmailChanged = {},
+            onPasswordChanged = {},
+            onRememberMeChanged = {},
+            onSubmit = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Login - Dark")
+@Composable
+private fun LoginContentPreviewDark() {
+    PayQuickTheme(darkTheme = true) {
+        LoginContent(
+            state = PreviewLoginState.copy(isLoading = true),
+            onEmailChanged = {},
+            onPasswordChanged = {},
+            onRememberMeChanged = {},
+            onSubmit = {}
+        )
     }
 }

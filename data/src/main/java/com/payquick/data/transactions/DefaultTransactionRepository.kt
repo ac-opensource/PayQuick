@@ -8,9 +8,11 @@ import com.payquick.domain.model.TransactionType
 import com.payquick.domain.repository.TransactionRepository
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.datetime.Instant
 import java.math.BigDecimal
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
+@OptIn(ExperimentalTime::class)
 @Singleton
 class DefaultTransactionRepository @Inject constructor(
     private val api: PayQuickApi

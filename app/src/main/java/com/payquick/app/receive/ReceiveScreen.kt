@@ -33,15 +33,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.payquick.R
 import com.payquick.app.common.TopBar
 import com.payquick.app.common.rememberBackNavigationAction
-import androidx.compose.ui.res.stringResource
-import com.payquick.R
+import com.payquick.app.designsystem.PayQuickTheme
 
 @Composable
 fun ReceiveScreen(
@@ -191,5 +193,39 @@ private fun ReceiveContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+    }
+}
+
+@Preview(showBackground = true, name = "Receive - Light")
+@Composable
+private fun ReceiveContentPreview() {
+    PayQuickTheme {
+        ReceiveContent(
+            state = ReceiveUiState(
+                code = "PQ-849201",
+                link = "https://payquick.app/pay/pq-849201",
+                refreshedLabel = "Updated 2 minutes ago"
+            ),
+            onGenerateNewCode = {},
+            onCopyLink = {},
+            onShareLink = {},
+            onNavigateBack = {},
+            isBackEnabled = true
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Receive - Dark")
+@Composable
+private fun ReceiveContentPreviewDark() {
+    PayQuickTheme(darkTheme = true) {
+        ReceiveContent(
+            state = ReceiveUiState(),
+            onGenerateNewCode = {},
+            onCopyLink = {},
+            onShareLink = {},
+            onNavigateBack = {},
+            isBackEnabled = false
+        )
     }
 }

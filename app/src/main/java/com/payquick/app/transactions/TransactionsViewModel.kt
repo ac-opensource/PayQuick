@@ -7,6 +7,9 @@ import com.payquick.R
 import com.payquick.domain.model.Transaction
 import com.payquick.domain.model.TransactionType
 import com.payquick.domain.usecase.FetchTransactionsPageUseCase
+import com.payquick.domain.time.TimeZone
+import com.payquick.domain.time.toJavaLocalDateTime
+import com.payquick.domain.time.toLocalDateTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.math.BigDecimal
@@ -19,6 +22,7 @@ import java.util.Currency
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.max
+import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -27,10 +31,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toJavaLocalDateTime
-import kotlinx.datetime.toLocalDateTime
 
+@OptIn(ExperimentalTime::class)
 @HiltViewModel
 class TransactionsViewModel @Inject constructor(
     private val fetchTransactionsPage: FetchTransactionsPageUseCase,

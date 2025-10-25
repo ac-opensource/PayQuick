@@ -4,11 +4,6 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
-    plugins {
-        id("com.android.application") version "8.5.2"
-        id("org.jetbrains.kotlin.android") version "2.2.20"
-        id("com.google.dagger.hilt.android") version "2.51.1"
-    }
 }
 
 dependencyResolutionManagement {

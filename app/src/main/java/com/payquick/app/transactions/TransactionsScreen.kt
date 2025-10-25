@@ -2,6 +2,7 @@ package com.payquick.app.transactions
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,11 +38,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.payquick.R
@@ -55,6 +57,9 @@ import com.payquick.app.common.TransactionListItemUi
 import com.payquick.app.common.transactionListSkeleton
 import com.payquick.app.common.rememberBackNavigationAction
 import com.payquick.app.navigation.TransactionDetails
+import com.payquick.app.designsystem.PayQuickTheme
+import java.time.LocalDateTime
+import java.time.Month
 
 @Composable
 fun TransactionsScreen(
@@ -131,7 +136,11 @@ private fun TransactionsContent(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         TopBar(
             modifier = Modifier.padding(horizontal = 16.dp),
             title = stringResource(R.string.transactions_title),
@@ -330,5 +339,80 @@ private fun TransactionsInlineError(message: String, onRetry: () -> Unit) {
         TextButton(onClick = onRetry) {
             Text(stringResource(R.string.transactions_retry))
         }
+    }
+}
+
+private val PreviewTransactionGroups = listOf(
+    TransactionUiGroup(
+        monthLabel = "September 2024",
+        items = listOf(
+            TransactionUiItem(
+                id = "t-1",
+                title = "Coffee Shop",
+                subtitle = "Sep 24 · 8:15 AM",
+                amountLabel = "-$4.50",
+                isCredit = false,
+                statusLabel = "Completed",
+                dateTime = LocalDateTime.of(2024, Month.SEPTEMBER, 24, 8, 15),
+                currencyCode = "USD",
+                counterpartyLabel = "Coffee Shop",
+                directionLabel = "Sent to Coffee Shop"
+            ),
+            TransactionUiItem(
+                id = "t-2",
+                title = "Jade Smith",
+                subtitle = "Sep 23 · 5:42 PM",
+                amountLabel = "+$120.00",
+                isCredit = true,
+                statusLabel = "Completed",
+                dateTime = LocalDateTime.of(2024, Month.SEPTEMBER, 23, 17, 42),
+                currencyCode = "USD",
+                counterpartyLabel = "Jade Smith",
+                directionLabel = "Received from Jade Smith"
+            )
+        )
+    )
+)
+
+private val PreviewTransactionsState = TransactionsUiState(
+    isLoading = false,
+    groups = PreviewTransactionGroups,
+    searchQuery = "",
+    filter = TransactionListFilter.ALL
+)
+
+@Preview(showBackground = true, name = "Transactions - Light")
+@Composable
+private fun TransactionsContentPreviewLight() {
+    PayQuickTheme {
+        TransactionsContent(
+            state = PreviewTransactionsState,
+            onNavigateBack = {},
+            isBackEnabled = true,
+            onTransactionClick = {},
+            onRefresh = {},
+            onLoadMore = {},
+            onSearchQueryChange = {},
+            onFilterChange = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Transactions - Dark")
+@Composable
+private fun TransactionsContentPreviewDark() {
+    PayQuickTheme(darkTheme = true) {
+        TransactionsContent(
+            state = PreviewTransactionsState.copy(isFetchingMore = true),
+            onNavigateBack = {},
+            isBackEnabled = false,
+            onTransactionClick = {},
+            onRefresh = {},
+            onLoadMore = {},
+            onSearchQueryChange = {},
+            onFilterChange = {},
+            onRetry = {}
+        )
     }
 }

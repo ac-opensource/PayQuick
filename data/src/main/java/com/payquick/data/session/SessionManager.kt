@@ -10,11 +10,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.datetime.Clock
-import kotlinx.datetime.plus
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
 @Singleton
+@OptIn(ExperimentalTime::class)
 class SessionManager @Inject constructor(
     private val preferences: SessionPreferencesDataSource
 ) {

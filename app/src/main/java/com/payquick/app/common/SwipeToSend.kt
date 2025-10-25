@@ -27,8 +27,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.payquick.R
+import com.payquick.app.designsystem.PayQuickTheme
 
 @Composable
 fun SwipeToSend(
@@ -82,5 +84,13 @@ fun SwipeToSend(
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.align(Alignment.Center)
         )
+    }
+}
+
+@Preview(showBackground = true, name = "Swipe To Send")
+@Composable
+private fun SwipeToSendPreview() {
+    PayQuickTheme {
+        SwipeToSend(onSwiped = {})
     }
 }

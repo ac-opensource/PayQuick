@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -50,8 +51,11 @@ import com.payquick.R
 import com.payquick.app.common.SwipeToSend
 import com.payquick.app.common.rememberBackNavigationAction
 import com.payquick.app.common.TopBar
+import androidx.compose.ui.tooling.preview.Preview
+import com.payquick.app.designsystem.PayQuickTheme
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import androidx.compose.ui.platform.LocalContext
+import java.util.Currency
 
 @Composable
 fun SendScreen(
@@ -261,6 +265,57 @@ private fun AmountDisplay(
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
+    }
+}
+
+private val PreviewRecipient = Recipient(
+    name = "Jamie Rivera",
+    joinDate = LocalDate.of(2021, 5, 4)
+)
+
+private val PreviewSendState = SendUiState(
+    amount = "125",
+    selectedRecipient = PreviewRecipient,
+    availableRecipients = listOf(PreviewRecipient),
+    selectedCurrency = Currency.getInstance("USD"),
+    availableCurrencies = listOf(
+        Currency.getInstance("USD"),
+        Currency.getInstance("EUR"),
+        Currency.getInstance("GBP")
+    )
+)
+
+@Preview(showBackground = true, name = "Send - Light")
+@Composable
+private fun SendContentPreviewLight() {
+    PayQuickTheme {
+        SendContent(
+            state = PreviewSendState,
+            onDigitClick = {},
+            onBackspaceClick = {},
+            onDoneClick = {},
+            onNavigateBack = {},
+            isBackEnabled = true,
+            onRecipientChange = {},
+            onCurrencyChange = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Send - Dark")
+@Composable
+private fun SendContentPreviewDark() {
+    PayQuickTheme(darkTheme = true) {
+        SendContent(
+            state = PreviewSendState.copy(isProcessing = true),
+            onDigitClick = {},
+            onBackspaceClick = {},
+            onDoneClick = {},
+            onNavigateBack = {},
+            isBackEnabled = false,
+            onRecipientChange = {},
+            onCurrencyChange = {}
+        )
     }
 }
 

@@ -17,6 +17,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.payquick.R
+import androidx.compose.ui.tooling.preview.Preview
+import com.payquick.app.designsystem.PayQuickTheme
 
 @Composable
 fun RetryErrorCard(
@@ -53,6 +55,28 @@ fun RetryErrorCard(
                 Text(resolvedRetryLabel)
             }
         }
+    }
+}
+
+@Preview(showBackground = true, name = "Retry Error")
+@Composable
+private fun RetryErrorCardPreview() {
+    PayQuickTheme {
+        RetryErrorCard(
+            message = "Unable to refresh transactions. Check your connection and try again.",
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Empty State")
+@Composable
+private fun EmptyStateCardPreview() {
+    PayQuickTheme {
+        EmptyStateCard(
+            title = "No activity yet",
+            body = "When you send or receive money, your history will show up here."
+        )
     }
 }
 
